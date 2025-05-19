@@ -19,7 +19,7 @@ export default function AnimatedBackground() {
                         key={i}
                         className="border border-cyan-900/40 bg-[#1d1d1b] transition-colors duration-200 hover:bg-cyan-400/80 hover:transition-none m-[2px]"
                         style={{
-                            boxShadow: '0 0 1px #00bfff33', // Subtle glow for grid lines
+                            boxShadow: '0 0 1px #00bfff33',
                         }}
                     />
                 ))}

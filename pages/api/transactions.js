@@ -17,7 +17,6 @@ export default async function handler(req, res) {
             console.log('Database connection opened for transactions');
         }
 
-        // Fetch transactions with user details if available
         const transactions = await db.all(
             `SELECT t.*, u.username
              FROM transactions t

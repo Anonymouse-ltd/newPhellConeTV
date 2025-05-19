@@ -36,8 +36,7 @@ export default async function handler(req, res) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        // If login is successful, return a simple token (in production, use JWT or similar)
-        const token = `admin-${email}-${Date.now()}`; // Simple token for demo; use secure token in production
+        const token = `admin-${email}-${Date.now()}`;
         console.log(`Login successful for email: ${email}`);
         return res.status(200).json({ token });
     } catch (error) {

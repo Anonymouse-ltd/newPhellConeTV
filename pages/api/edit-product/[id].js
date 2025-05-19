@@ -24,16 +24,13 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Brand, name, and price are required' });
         }
 
-        // Start a transaction to ensure data consistency across tables
         await db.run('BEGIN TRANSACTION');
 
-        // Update gadgets table
         await db.run(
             'UPDATE gadgets SET brand = ?, name = ?, price = ? WHERE id = ?',
             [brand, name, price, id]
         );
 
-        // Update or insert into gadget_details table
         const detailExists = await db.get('SELECT gadget_id FROM gadget_details WHERE gadget_id = ?', [id]);
         if (detailExists) {
             await db.run(
@@ -46,14 +43,11 @@ export default async function handler(req, res) {
                 [id, os || null, color || null, storage || null, ram || null, battery || null, display || null, processor || null, camera || null]
             );
         }
-
-        // Commit the transaction
         await db.run('COMMIT');
 
         console.log(`Product updated successfully with ID: ${id}`);
         return res.status(200).json({ id, message: 'Product updated successfully' });
     } catch (error) {
-        // Rollback the transaction in case of error
         if (db) {
             await db.run('ROLLBACK');
         }

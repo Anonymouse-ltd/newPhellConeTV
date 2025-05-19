@@ -37,7 +37,6 @@ export default function AdminLogin() {
                 return;
             }
 
-            // On successful login, store a token in localStorage
             localStorage.setItem('adminToken', data.token);
             router.push('/admin/dashboard');
         } catch (err) {

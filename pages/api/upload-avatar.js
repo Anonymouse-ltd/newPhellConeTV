@@ -9,7 +9,7 @@ export const config = {
     },
 };
 
-const IMGBB_API_KEY = process.env.IMGBB_API_KEY; // Set your ImgBB API key in env
+const IMGBB_API_KEY = process.env.IMGBB_API_KEY;
 
 let db = null;
 

@@ -18,14 +18,8 @@ export default async function handler(req, res) {
         }
 
         const { id } = req.query;
-
-        // Start a transaction to ensure data consistency across tables
         await db.run('BEGIN TRANSACTION');
-
-        // Delete from gadget_details table (if exists)
         await db.run('DELETE FROM gadget_details WHERE gadget_id = ?', [id]);
-
-        // Delete from gadgets table
         const result = await db.run('DELETE FROM gadgets WHERE id = ?', [id]);
 
         if (result.changes === 0) {
@@ -33,13 +27,11 @@ export default async function handler(req, res) {
             return res.status(404).json({ error: 'Product not found' });
         }
 
-        // Commit the transaction
         await db.run('COMMIT');
 
         console.log(`Product removed successfully with ID: ${id}`);
         return res.status(200).json({ id, message: 'Product removed successfully' });
     } catch (error) {
-        // Rollback the transaction in case of error
         if (db) {
             await db.run('ROLLBACK');
         }
