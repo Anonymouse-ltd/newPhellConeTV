@@ -59,12 +59,14 @@ export default async function handler(req, res) {
         const userId = userResult.lastID;
 
         await db.run(
-            'INSERT INTO user_details (user_id, email, username, name, birthday, is_pwd) VALUES (?, ?, ?, ?, ?, ?)',
+            'INSERT INTO user_details (user_id, email, username, name, birthday, phone, address, is_pwd) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             userId,
             email,
             username,
             name,
             birthdate,
+            '',
+            '',
             0
         );
 
