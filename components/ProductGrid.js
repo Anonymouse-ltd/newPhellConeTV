@@ -41,7 +41,7 @@ export default function ProductGrid({ gadgets, loading }) {
             ) : (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                     {gadgets.map(gadget => {
-                        const imgSrc = encodeURI(`/${gadget.brand}/${gadget.name}/cover.png`);
+                        const imgSrc = encodeURI(`/${gadget.brand.toLowerCase()}/${gadget.name.toLowerCase()}/cover.png`);
                         const cleanPrice = typeof gadget.price === 'string'
                             ? parseFloat(gadget.price.replace(/[^0-9.]/g, ''))
                             : gadget.price;
