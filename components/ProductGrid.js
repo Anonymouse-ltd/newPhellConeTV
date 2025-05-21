@@ -41,7 +41,24 @@ export default function ProductGrid({ gadgets, loading }) {
             ) : (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                     {gadgets.map(gadget => {
-                        const imgSrc = encodeURI(`/${gadget.brand.toLowerCase()}/${gadget.name.toLowerCase()}/cover.png`);
+                        const fs = require("fs"); 
+                        const possibleFormats = ["png", "jpeg", "jpg", "webp"];
+                        
+                        const folderOptions = [
+                            gadget.name.toLowerCase(),
+                            gadget.name.toUpperCase(),
+                            gadget.name, 
+                        ];
+                        let detectedFolder = folderOptions.find(folder => fs.existsSync(`/${gadget.brand.toLowerCase()}/${folder}`));
+                        if (detectedFolder) {
+                            let imgSrc = possibleFormats.map(format =>
+                                encodeURI(`/${gadget.brand.toLowerCase()}/${detectedFolder}/cover.${format}`)
+                            );
+                            console.log(imgSrc);
+                        } else {
+                            console.error("Folder not found!");
+                        }
+
                         const cleanPrice = typeof gadget.price === 'string'
                             ? parseFloat(gadget.price.replace(/[^0-9.]/g, ''))
                             : gadget.price;
