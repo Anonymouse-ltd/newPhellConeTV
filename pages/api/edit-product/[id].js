@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         }
 
         const { id } = req.query;
-        const { brand, name, price, os, color, storage, ram, battery, display, processor, camera } = req.body;
+        const { brand, name, price, os, colors, storage, ram, battery, display, processor, camera } = req.body;
 
         if (!brand || !name || !price) {
             return res.status(400).json({ error: 'Brand, name, and price are required' });
@@ -32,15 +32,16 @@ export default async function handler(req, res) {
         );
 
         const detailExists = await db.get('SELECT gadget_id FROM gadget_details WHERE gadget_id = ?', [id]);
+        const colorsJson = JSON.stringify(colors || []);
         if (detailExists) {
             await db.run(
-                'UPDATE gadget_details SET os = ?, color = ?, storage = ?, ram = ?, battery = ?, display = ?, processor = ?, camera = ? WHERE gadget_id = ?',
-                [os || null, color || null, storage || null, ram || null, battery || null, display || null, processor || null, camera || null, id]
+                'UPDATE gadget_details SET os = ?, colors = ?, storage = ?, ram = ?, battery = ?, display = ?, processor = ?, camera = ? WHERE gadget_id = ?',
+                [os || '', colorsJson, storage || '', ram || '', battery || '', display || '', processor || '', camera || '', id]
             );
         } else {
             await db.run(
-                'INSERT INTO gadget_details (gadget_id, os, color, storage, ram, battery, display, processor, camera) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [id, os || null, color || null, storage || null, ram || null, battery || null, display || null, processor || null, camera || null]
+                'INSERT INTO gadget_details (gadget_id, os, colors, storage, ram, battery, display, processor, camera) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [id, os || '', colorsJson, storage || '', ram || '', battery || '', display || '', processor || '', camera || '']
             );
         }
         await db.run('COMMIT');

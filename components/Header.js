@@ -16,9 +16,15 @@ export default function Header({ gadgets = [], onSearchSelect }) {
     const [avatarUrl, setAvatarUrl] = useState('');
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const [cartItemCount, setCartItemCount] = useState(0);
+    const [hasMounted, setHasMounted] = useState(false);
+
     const { cartItems } = useCart();
     const router = useRouter();
     const { theme, toggleTheme } = useTheme();
+
+    useEffect(() => {
+        setHasMounted(true); // Prevent hydration mismatch
+    }, []);
 
     useEffect(() => {
         const authToken = Cookies.get('authToken');
@@ -137,17 +143,22 @@ export default function Header({ gadgets = [], onSearchSelect }) {
                                 {cartItemCount}
                             </span>
                         </button>
-                        <button
-                            onClick={toggleTheme}
-                            className="flex items-center bg-green-100 dark:bg-gray-700 p-2 rounded-full hover:bg-green-200 dark:hover:bg-gray-600 transition-all duration-200"
-                            aria-label="Toggle theme"
-                        >
-                            {theme === 'light' ? (
-                                <SunIcon className="h-6 w-6 text-green-700" />
-                            ) : (
-                                <MoonIcon className="h-6 w-6 text-green-400" />
-                            )}
-                        </button>
+
+                        {/* Theme toggle – fix for hydration mismatch */}
+                        {hasMounted && (
+                            <button
+                                onClick={toggleTheme}
+                                className="flex items-center bg-green-100 dark:bg-gray-700 p-2 rounded-full hover:bg-green-200 dark:hover:bg-gray-600 transition-all duration-200"
+                                aria-label="Toggle theme"
+                            >
+                                {theme === 'light' ? (
+                                    <SunIcon className="h-6 w-6 text-green-700" />
+                                ) : (
+                                    <MoonIcon className="h-6 w-6 text-green-400" />
+                                )}
+                            </button>
+                        )}
+
                         {isAuthenticated ? (
                             <div className="relative">
                                 <button

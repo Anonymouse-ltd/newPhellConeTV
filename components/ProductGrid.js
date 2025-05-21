@@ -31,6 +31,21 @@ export default function ProductGrid({ gadgets, loading }) {
         }
     };
 
+    const getColorNames = (colors) => {
+        if (!colors) return '';
+        if (typeof colors === 'string') {
+            try {
+                colors = JSON.parse(colors);
+            } catch (e) {
+                return colors;
+            }
+        }
+        if (Array.isArray(colors)) {
+            return colors.map(colorObj => colorObj.color).filter(Boolean).join(', ');
+        }
+        return '';
+    };
+
     return (
         <main className="max-w-7xl mx-auto px-4 py-8 bg-gray-50 dark:bg-gray-900">
             <h2 className="text-3xl font-extrabold mb-8 text-green-700 dark:text-green-400 tracking-tight">All Gadgets</h2>
@@ -44,6 +59,7 @@ export default function ProductGrid({ gadgets, loading }) {
                         const cleanPrice = typeof gadget.price === 'string'
                             ? parseFloat(gadget.price.replace(/[^0-9.]/g, ''))
                             : gadget.price;
+                        const colorNames = getColorNames(gadget.colors);
                         return (
                             <li key={gadget.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md dark:shadow-gray-700 p-6 flex flex-col hover:shadow-xl dark:hover:shadow-gray-600 transition-all duration-300 group">
                                 <Link href={`/gadgets/${gadget.id}`} className="flex flex-col h-full">
@@ -60,6 +76,9 @@ export default function ProductGrid({ gadgets, loading }) {
                                     </div>
                                     <div className="font-bold text-lg text-gray-900 dark:text-gray-100 truncate">{gadget.name}</div>
                                     <div className="text-gray-500 dark:text-gray-400 capitalize text-sm mb-2">{gadget.brand}</div>
+                                    {colorNames && (
+                                        <div className="text-gray-600 dark:text-gray-400 text-xs mb-2 truncate">Colors: {colorNames}</div>
+                                    )}
                                     <div className="text-green-700 dark:text-green-400 font-semibold text-lg mb-4">
                                         {isNaN(cleanPrice)
                                             ? 'Price unavailable'

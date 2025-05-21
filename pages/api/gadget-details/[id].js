@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
         console.log(`Fetching gadget details for ID: ${id}`);
         const gadget = await db.get(
-            `SELECT g.*, gd.os, gd.color, gd.storage, gd.ram, gd.battery, gd.display, gd.processor, gd.camera
+            `SELECT g.*, gd.os, gd.colors, gd.storage, gd.ram, gd.battery, gd.display, gd.processor, gd.camera
              FROM gadgets g
              LEFT JOIN gadget_details gd ON g.id = gd.gadget_id
              WHERE g.id = ?`,
@@ -34,6 +34,17 @@ export default async function handler(req, res) {
         if (!gadget) {
             console.error(`Gadget not found for ID: ${id}`);
             return res.status(404).json({ error: 'Gadget not found' });
+        }
+
+        if (gadget.colors && typeof gadget.colors === 'string') {
+            try {
+                gadget.colors = JSON.parse(gadget.colors) || [];
+            } catch (e) {
+                console.error(`Error parsing colors JSON for gadget ID ${id}:`, e);
+                gadget.colors = [];
+            }
+        } else if (!gadget.colors) {
+            gadget.colors = [];
         }
 
         console.log(`Successfully fetched gadget details for ID: ${id}`);

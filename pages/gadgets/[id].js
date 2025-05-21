@@ -17,6 +17,10 @@ export default function GadgetDetail({ gadget, images = [], relatedGadgets = [] 
     const [error, setError] = useState(null);
     const [selectedImage, setSelectedImage] = useState(images.length > 0 ? images[0] : '');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const colors = Array.isArray(gadget.colors) ? gadget.colors : [];
+    const [selectedColor, setSelectedColor] = useState(colors[0]?.color || '');
+    const selectedColorObj = colors.find(c => c.color === selectedColor) || { stock: 0 };
+    const [quantity, setQuantity] = useState(1);
     const { addToCart } = useCart();
     const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
@@ -32,12 +36,25 @@ export default function GadgetDetail({ gadget, images = [], relatedGadgets = [] 
         setSelectedImage(image);
     };
 
+    const handleColorSelect = (color) => {
+        setSelectedColor(color);
+        setQuantity(1);
+    };
+
+    const handleQuantityChange = (e) => {
+        let val = parseInt(e.target.value, 10);
+        if (isNaN(val) || val < 1) val = 1;
+        if (val > selectedColorObj.stock) val = selectedColorObj.stock;
+        setQuantity(val);
+    };
+
     const handleAddToCart = () => {
         if (gadget) {
-            addToCart(gadget);
-            toast.success(`${gadget.name} added to cart!`, {
+            const cartItem = { ...gadget, selectedColor, quantity };
+            addToCart(cartItem);
+            toast.success(`${gadget.name} (${selectedColor}) added to cart!`, {
                 position: "top-center",
-                toastId: `cart-add-${gadget.id}`
+                toastId: `cart-add-${gadget.id}-${selectedColor}`
             });
         }
     };
@@ -164,16 +181,60 @@ export default function GadgetDetail({ gadget, images = [], relatedGadgets = [] 
                         <div className="flex items-center gap-2">
                             <span className="text-3xl font-semibold text-green-700 dark:text-green-400">{formattedPrice}</span>
                         </div>
+                        {colors.length > 0 && (
+                            <div className="mb-4">
+                                <div className="font-semibold text-gray-800 dark:text-gray-100 mb-1">Color:</div>
+                                <div className="flex gap-2 flex-wrap">
+                                    {colors.map(({ color, stock }) => (
+                                        <button
+                                            key={color}
+                                            onClick={() => handleColorSelect(color)}
+                                            className={`flex items-center px-4 py-2 rounded border transition
+                                                ${selectedColor === color
+                                                    ? 'border-green-600 bg-green-100 dark:bg-green-900 text-gray-800 dark:text-gray-100'
+                                                    : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-100'}`}
+                                            disabled={stock <= 0}
+                                        >
+                                            <span
+                                                className="inline-block w-4 h-4 rounded-full border mr-2"
+                                                style={{
+                                                    backgroundColor: color.toLowerCase(),
+                                                    borderColor: selectedColor === color ? '#16a34a' : '#d1d5db'
+                                                }}
+                                            />
+                                            <span>{color}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        <div className="mb-4 flex items-center gap-2">
+                            <span className="font-medium text-gray-700 dark:text-gray-200">Quantity:</span>
+                            <input
+                                type="number"
+                                min={1}
+                                max={selectedColorObj.stock || 1}
+                                value={quantity}
+                                onChange={handleQuantityChange}
+                                className="w-20 p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-green-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                disabled={selectedColorObj.stock === 0}
+                            />
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {selectedColorObj.stock > 0 ? `Max: ${selectedColorObj.stock}` : 'Out of stock'}
+                            </span>
+                        </div>
                         <div className="flex gap-3">
                             <button
                                 onClick={handleAddToCart}
                                 className="flex-1 bg-green-600 dark:bg-green-700 text-white py-3 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-all duration-200 flex items-center justify-center text-lg font-semibold"
+                                disabled={selectedColorObj.stock === 0 || quantity < 1}
                             >
                                 🛒 Add to Cart
                             </button>
                             <button
                                 onClick={handleBuyNow}
                                 className="px-4 bg-yellow-500 dark:bg-yellow-600 text-white py-3 rounded-lg hover:bg-yellow-600 dark:hover:bg-yellow-500 transition-all duration-200 text-lg font-semibold"
+                                disabled={selectedColorObj.stock === 0 || quantity < 1}
                             >
                                 Buy Now
                             </button>
@@ -199,7 +260,6 @@ export default function GadgetDetail({ gadget, images = [], relatedGadgets = [] 
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Product Highlights</h2>
                             <ul className="space-y-2 text-gray-700 dark:text-gray-300 text-sm">
                                 {gadget.os && <li className="flex items-start gap-2"><span className="text-green-600 dark:text-green-400">•</span><span><strong>OS:</strong> {gadget.os}</span></li>}
-                                {gadget.color && <li className="flex items-start gap-2"><span className="text-green-600 dark:text-green-400">•</span><span><strong>Color:</strong> {gadget.color}</span></li>}
                                 {gadget.storage && <li className="flex items-start gap-2"><span className="text-green-600 dark:text-green-400">•</span><span><strong>Storage:</strong> {gadget.storage}</span></li>}
                                 {gadget.ram && <li className="flex items-start gap-2"><span className="text-green-600 dark:text-green-400">•</span><span><strong>RAM:</strong> {gadget.ram}</span></li>}
                             </ul>
@@ -213,7 +273,6 @@ export default function GadgetDetail({ gadget, images = [], relatedGadgets = [] 
                             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Specifications</h3>
                             <ul className="space-y-2 text-gray-700 dark:text-gray-300 text-sm">
                                 {gadget.os && <li className="flex items-start gap-2"><span className="w-24 font-medium">OS:</span><span>{gadget.os}</span></li>}
-                                {gadget.color && <li className="flex items-start gap-2"><span className="w-24 font-medium">Color:</span><span>{gadget.color}</span></li>}
                                 {gadget.storage && <li className="flex items-start gap-2"><span className="w-24 font-medium">Storage:</span><span>{gadget.storage}</span></li>}
                                 {gadget.ram && <li className="flex items-start gap-2"><span className="w-24 font-medium">RAM:</span><span>{gadget.ram}</span></li>}
                                 {gadget.battery && <li className="flex items-start gap-2"><span className="w-24 font-medium">Battery:</span><span>{gadget.battery}</span></li>}
@@ -221,7 +280,7 @@ export default function GadgetDetail({ gadget, images = [], relatedGadgets = [] 
                                 {gadget.processor && <li className="flex items-start gap-2"><span className="w-24 font-medium">Processor:</span><span>{gadget.processor}</span></li>}
                                 {gadget.camera && <li className="flex items-start gap-2"><span className="w-24 font-medium">Camera:</span><span>{gadget.camera}</span></li>}
                             </ul>
-                            {!gadget.os && !gadget.color && !gadget.storage && !gadget.ram && !gadget.battery && !gadget.display && !gadget.processor && !gadget.camera && (
+                            {!gadget.os && !gadget.storage && !gadget.ram && !gadget.battery && !gadget.display && !gadget.processor && !gadget.camera && (
                                 <p className="text-gray-500 dark:text-gray-400 italic">No additional specifications available.</p>
                             )}
                         </div>
