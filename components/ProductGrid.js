@@ -41,24 +41,6 @@ export default function ProductGrid({ gadgets, loading }) {
             ) : (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                     {gadgets.map(gadget => {
-                        const fs = require("fs"); 
-                        const possibleFormats = ["png", "jpeg", "jpg", "webp"];
-                        
-                        const folderOptions = [
-                            gadget.name.toLowerCase(),
-                            gadget.name.toUpperCase(),
-                            gadget.name, 
-                        ];
-                        let detectedFolder = folderOptions.find(folder => fs.existsSync(`/${gadget.brand.toLowerCase()}/${folder}`));
-                        if (detectedFolder) {
-                            let imgSrc = possibleFormats.map(format =>
-                                encodeURI(`/${gadget.brand.toLowerCase()}/${detectedFolder}/cover.${format}`)
-                            );
-                            console.log(imgSrc);
-                        } else {
-                            console.error("Folder not found!");
-                        }
-
                         const cleanPrice = typeof gadget.price === 'string'
                             ? parseFloat(gadget.price.replace(/[^0-9.]/g, ''))
                             : gadget.price;
@@ -67,10 +49,13 @@ export default function ProductGrid({ gadgets, loading }) {
                                 <Link href={`/gadgets/${gadget.id}`} className="flex flex-col h-full">
                                     <div className="h-52 w-full bg-gray-100 dark:bg-gray-700 rounded-xl mb-4 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-300">
                                         <img
-                                            src={imgSrc}
+                                            src={gadget.imgSrc}
                                             alt={`${gadget.name} cover`}
                                             className="max-h-full max-w-full object-contain rounded-xl bg-white dark:bg-gray-800"
                                             style={{ display: 'block', margin: '0 auto' }}
+                                            onError={(e) => {
+                                                e.target.alt = 'Image not available';
+                                            }}
                                         />
                                     </div>
                                     <div className="font-bold text-lg text-gray-900 dark:text-gray-100 truncate">{gadget.name}</div>

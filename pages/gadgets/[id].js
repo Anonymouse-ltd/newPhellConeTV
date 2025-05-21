@@ -7,17 +7,16 @@ import { useCart } from '../../components/CartContext';
 import { useWishlist } from '../../components/WishlistContext';
 import { toast } from 'react-toastify';
 import Cookies from 'js-cookie';
+import fs from 'fs';
+import path from 'path';
 
-export default function GadgetDetail() {
+export default function GadgetDetail({ gadget, images = [], relatedGadgets = [] }) {
     const router = useRouter();
     const { id } = router.query;
-    const [gadget, setGadget] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [selectedImage, setSelectedImage] = useState('cover.png');
+    const [selectedImage, setSelectedImage] = useState(images.length > 0 ? images[0] : '');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [allGadgets, setAllGadgets] = useState([]);
-    const [relatedGadgets, setRelatedGadgets] = useState([]);
     const { addToCart } = useCart();
     const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
@@ -27,47 +26,7 @@ export default function GadgetDetail() {
         if (authToken && storedUserId) {
             setIsAuthenticated(true);
         }
-
-        if (!router.isReady) return;
-
-        if (id) {
-            fetch(`/api/gadget-details/${id}`)
-                .then(res => {
-                    if (!res.ok) {
-                        throw new Error(`Failed to fetch gadget details. Status: ${res.status}`);
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    setGadget(data);
-                    setLoading(false);
-                })
-                .catch(error => {
-                    setError('Could not load gadget details. Please try again later.');
-                    setLoading(false);
-                });
-        } else {
-            setError('Invalid gadget ID. Please navigate from the home page.');
-            setLoading(false);
-        }
-    }, [id, router.isReady]);
-
-
-    useEffect(() => {
-        fetch('/api/gadgets')
-            .then(res => res.json())
-            .then(data => setAllGadgets(data))
-            .catch(() => setAllGadgets([]));
     }, []);
-
-
-    useEffect(() => {
-        if (allGadgets.length > 0 && gadget) {
-            const filtered = allGadgets.filter(g => g.id !== gadget.id);
-            const shuffled = [...filtered].sort(() => 0.5 - Math.random());
-            setRelatedGadgets(shuffled.slice(0, 4));
-        }
-    }, [allGadgets, gadget]);
 
     const handleImageSelect = (image) => {
         setSelectedImage(image);
@@ -150,9 +109,7 @@ export default function GadgetDetail() {
         ? 'Price unavailable'
         : `₱${cleanPrice.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    const baseImagePath = `/${gadget.brand.toLowerCase()}/${gadget.name.toLowerCase()}`;
-    const largeImageSrc = `${baseImagePath}/${selectedImage}`;
-    const thumbnailImages = ['cover.png'];
+    const largeImageSrc = selectedImage || (images.length > 0 ? images[0] : '');
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -177,24 +134,22 @@ export default function GadgetDetail() {
                                 className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-110"
                                 onError={(e) => {
                                     e.target.alt = 'Image not available';
-
                                 }}
                             />
                         </div>
-                        <div className="flex gap-2 justify-center">
-                            {thumbnailImages.map((img) => (
+                        <div className="flex gap-2 justify-center overflow-x-auto pb-2">
+                            {images.map((img) => (
                                 <button
                                     key={img}
-                                    className={`w-16 h-16 border rounded-md overflow-hidden ${selectedImage === img ? 'border-green-600 dark:border-green-400 border-2' : 'border-gray-200 dark:border-gray-700'}`}
+                                    className={`w-16 h-16 border rounded-md overflow-hidden flex-shrink-0 ${selectedImage === img ? 'border-green-600 dark:border-green-400 border-2' : 'border-gray-200 dark:border-gray-700'}`}
                                     onClick={() => handleImageSelect(img)}
                                 >
                                     <img
-                                        src={`${baseImagePath}/${img}`}
+                                        src={img}
                                         alt={`${gadget.name} thumbnail`}
                                         className="w-full h-full object-cover"
                                         onError={(e) => {
                                             e.target.alt = 'Image not available';
-
                                         }}
                                     />
                                 </button>
@@ -285,7 +240,7 @@ export default function GadgetDetail() {
                             relatedGadgets.map(item => (
                                 <div key={item.id} className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 flex flex-col items-center justify-center h-48">
                                     <img
-                                        src={`/${item.brand.toLowerCase()}/${item.name.toLowerCase()}/cover.png`}
+                                        src={item.imgSrc || `/${item.brand.toLowerCase()}/${item.name.toLowerCase()}/cover.png`}
                                         alt={item.name}
                                         className="w-16 h-16 object-cover rounded mb-2"
                                         onError={(e) => {
@@ -318,4 +273,100 @@ export default function GadgetDetail() {
             </footer>
         </div>
     );
+}
+
+export async function getServerSideProps(context) {
+    const { id } = context.params;
+    try {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+        const gadgetRes = await fetch(`${apiBaseUrl}/api/gadget-details/${id}`);
+        if (!gadgetRes.ok) {
+            throw new Error(`Failed to fetch gadget details: ${gadgetRes.status}`);
+        }
+        const gadget = await gadgetRes.json();
+
+        const allGadgetsRes = await fetch(`${apiBaseUrl}/api/gadgets`);
+        if (!allGadgetsRes.ok) {
+            throw new Error(`Failed to fetch all gadgets: ${allGadgetsRes.status}`);
+        }
+        const allGadgets = await allGadgetsRes.json();
+
+        const filtered = allGadgets.filter(g => g.id !== gadget.id);
+        const shuffled = [...filtered].sort(() => 0.5 - Math.random());
+        const relatedGadgets = shuffled.slice(0, 4).map(item => {
+            const imgSrc = findCoverImage(item.brand, item.name);
+            return { ...item, imgSrc };
+        });
+
+        const images = findAllImages(gadget.brand, gadget.name);
+
+        return {
+            props: {
+                gadget,
+                images,
+                relatedGadgets
+            }
+        };
+    } catch (error) {
+        console.error('Error in getServerSideProps:', error);
+        return {
+            props: {
+                gadget: null,
+                images: [],
+                relatedGadgets: []
+            }
+        };
+    }
+}
+
+function findCoverImage(brand, gadgetName) {
+    const baseDir = path.join(process.cwd(), 'public', brand.toLowerCase());
+    const folderVariations = [
+        gadgetName.toLowerCase(),
+        gadgetName.toUpperCase(),
+        gadgetName
+    ];
+    for (const folder of folderVariations) {
+        const folderPath = path.join(baseDir, folder);
+        try {
+            if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
+                const files = fs.readdirSync(folderPath);
+                for (const file of files) {
+                    const fileNameWithoutExt = path.basename(file, path.extname(file)).toLowerCase();
+                    if (fileNameWithoutExt === 'cover') {
+                        return `/${brand.toLowerCase()}/${folder}/${file}`;
+                    }
+                }
+            }
+        } catch (err) {
+            console.error(`Error checking folder ${folderPath}:`, err);
+        }
+    }
+    return `/${brand.toLowerCase()}/${gadgetName.toLowerCase()}/cover.png`;
+}
+
+function findAllImages(brand, gadgetName) {
+    const baseDir = path.join(process.cwd(), 'public', brand.toLowerCase());
+    const folderVariations = [
+        gadgetName.toLowerCase(),
+        gadgetName.toUpperCase(),
+        gadgetName
+    ];
+    for (const folder of folderVariations) {
+        const folderPath = path.join(baseDir, folder);
+        try {
+            if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
+                const files = fs.readdirSync(folderPath);
+                return files
+                    .filter(file => {
+                        const ext = path.extname(file).toLowerCase();
+                        return ['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext);
+                    })
+                    .map(file => `/${brand.toLowerCase()}/${folder}/${file}`);
+            }
+        } catch (err) {
+            console.error(`Error checking folder ${folderPath}:`, err);
+        }
+    }
+    return [];
 }
