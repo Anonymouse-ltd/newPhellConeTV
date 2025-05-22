@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -14,6 +14,20 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { redirect } = router.query; // Get redirect parameter from URL query
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const userId = Cookies.get('userId');
+    const authToken = Cookies.get('authToken');
+    if (userId && authToken) {
+      toast.info('You are already logged in.', {
+        position: "top-center",
+        toastId: "already-logged-in"
+      });
+      router.push(redirect || '/');
+    }
+  }, [redirect, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,7 +59,8 @@ export default function Login() {
           position: "top-center",
           toastId: "login-success"
         });
-        router.push('/');
+        // Redirect to the specified page from query parameter or default to home
+        router.push(redirect || '/');
       }
     } catch (error) {
       toast.error('An error occurred. Please try again.', {

@@ -6,7 +6,7 @@ import { useCart } from './CartContext';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/router';
 import { useTheme } from './ThemeContext';
-
+import { toast } from 'react-toastify';
 export default function Header({ gadgets = [], onSearchSelect }) {
     const [cartOpen, setCartOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -23,28 +23,31 @@ export default function Header({ gadgets = [], onSearchSelect }) {
     const { theme, toggleTheme } = useTheme();
 
     useEffect(() => {
-        setHasMounted(true); // Prevent hydration mismatch
+        setHasMounted(true);
     }, []);
 
     useEffect(() => {
-        const authToken = Cookies.get('authToken');
-        const storedUserId = Cookies.get('userId');
-        if (authToken && storedUserId) {
-            setIsAuthenticated(true);
-            setUserId(storedUserId);
-            fetchUserDetails(storedUserId);
+        if (hasMounted) {
+            const authToken = Cookies.get('authToken');
+            const storedUserId = Cookies.get('userId');
+            if (authToken && storedUserId) {
+                setIsAuthenticated(true);
+                setUserId(storedUserId);
+                fetchUserDetails(storedUserId);
+            }
         }
-    }, []);
+    }, [hasMounted]);
 
     useEffect(() => {
-        // Calculate total items in cart using 'quantity' instead of 'qty'
-        const totalCount = cartItems.reduce((sum, item) => sum + (Number.isInteger(item.quantity) ? item.quantity : 0), 0);
-        console.log(`Cart item count updated: ${totalCount}`);
-        setCartItemCount(totalCount);
-    }, [cartItems]);
+        if (hasMounted) {
+            const totalCount = cartItems.reduce((sum, item) => sum + (Number.isInteger(item.quantity) ? item.quantity : 0), 0);
+            console.log(`Cart item count updated: ${totalCount}`);
+            setCartItemCount(totalCount);
+        }
+    }, [cartItems, hasMounted]);
 
     useEffect(() => {
-        if (searchQuery) {
+        if (hasMounted && searchQuery) {
             const results = gadgets.filter(gadget =>
                 gadget.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 gadget.brand.toLowerCase().includes(searchQuery.toLowerCase())
@@ -53,7 +56,7 @@ export default function Header({ gadgets = [], onSearchSelect }) {
         } else {
             setSearchResults([]);
         }
-    }, [searchQuery, gadgets]);
+    }, [searchQuery, gadgets, hasMounted]);
 
     const fetchUserDetails = async (userId) => {
         try {
@@ -82,15 +85,21 @@ export default function Header({ gadgets = [], onSearchSelect }) {
     const toggleProfileDropdown = () => {
         setIsProfileDropdownOpen(!isProfileDropdownOpen);
     };
-
+    const { clearCart } = useCart();
     const handleLogout = () => {
         Cookies.remove('authToken');
         Cookies.remove('userId');
+        clearCart();
         setIsAuthenticated(false);
         setUserId(null);
         setAvatarUrl('');
-        router.push('/login');
+        toast.info('Logged out successfully. Cart cleared.', {
+            position: "top-center",
+            toastId: 'logout-success'
+        });
+        router.push('/');
     };
+
 
     return (
         <>
@@ -111,7 +120,7 @@ export default function Header({ gadgets = [], onSearchSelect }) {
                                 onChange={handleSearchChange}
                             />
                             <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 dark:text-gray-500 absolute left-3 top-2.5" />
-                            {searchResults.length > 0 && (
+                            {hasMounted && searchResults.length > 0 && (
                                 <div className="absolute top-12 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-30 mt-1 max-h-96 overflow-y-auto">
                                     {searchResults.map(result => {
                                         const imgSrc = encodeURI(`/${result.brand.toLowerCase()}/${result.name.toLowerCase()}/cover.png`);
@@ -140,13 +149,14 @@ export default function Header({ gadgets = [], onSearchSelect }) {
                         </div>
                     </div>
                     <div className="flex gap-4 items-center">
-                        <button onClick={() => setCartOpen(true)} className="relative flex items-center group" aria-label="Open cart">
-                            <ShoppingCartIcon className="h-7 w-7 text-green-700 dark:text-green-400 group-hover:text-green-900 dark:group-hover:text-green-300 transition-all duration-200" />
-                            <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full px-2 py-0.5 font-bold shadow">
-                                {cartItemCount}
-                            </span>
-                        </button>
-                        {/* Theme toggle – fix for hydration mismatch */}
+                        {hasMounted && (
+                            <button onClick={() => setCartOpen(true)} className="relative flex items-center group" aria-label="Open cart">
+                                <ShoppingCartIcon className="h-7 w-7 text-green-700 dark:text-green-400 group-hover:text-green-900 dark:group-hover:text-green-300 transition-all duration-200" />
+                                <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full px-2 py-0.5 font-bold shadow">
+                                    {cartItemCount}
+                                </span>
+                            </button>
+                        )}
                         {hasMounted && (
                             <button
                                 onClick={toggleTheme}
@@ -160,7 +170,7 @@ export default function Header({ gadgets = [], onSearchSelect }) {
                                 )}
                             </button>
                         )}
-                        {isAuthenticated ? (
+                        {hasMounted && isAuthenticated ? (
                             <div className="relative">
                                 <button
                                     onClick={toggleProfileDropdown}
@@ -201,11 +211,11 @@ export default function Header({ gadgets = [], onSearchSelect }) {
                                             Wishlist
                                         </Link>
                                         <Link
-                                            href="/favorites"
+                                            href="/purchase"
                                             className="block px-4 py-2 hover:bg-green-50 dark:hover:bg-green-900 transition-all duration-200 text-gray-800 dark:text-gray-200"
                                             onClick={() => setIsProfileDropdownOpen(false)}
                                         >
-                                            Favorites
+                                            Purchase
                                         </Link>
                                         <Link
                                             href="/settings"
@@ -223,15 +233,15 @@ export default function Header({ gadgets = [], onSearchSelect }) {
                                     </div>
                                 )}
                             </div>
-                        ) : (
+                        ) : hasMounted ? (
                             <Link href="/login" className="px-4 py-2 rounded-full bg-green-100 dark:bg-gray-700 text-green-700 dark:text-green-400 font-semibold hover:bg-green-200 dark:hover:bg-gray-600 transition-all duration-200 shadow-sm hover:shadow-md">
                                 Login
                             </Link>
-                        )}
+                        ) : null}
                     </div>
                 </div>
             </header>
-            <CartModal open={cartOpen} onClose={() => setCartOpen(false)} />
+            {hasMounted && <CartModal open={cartOpen} onClose={() => setCartOpen(false)} />}
         </>
     );
 }

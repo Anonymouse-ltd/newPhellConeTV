@@ -44,8 +44,8 @@ export default function Navigation({ selectedBrand, onBrandChange }) {
                     </div>
                 )}
             </div>
-            <a href="#" className="capitalize hover:text-green-900 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-gray-800 px-4 py-2 rounded-full transition-all duration-200">Contact Us</a>
-            <a href="#" className="capitalize hover:text-green-900 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-gray-800 px-4 py-2 rounded-full transition-all duration-200">About Us</a>
+            <a href="/contact-us" className="capitalize hover:text-green-900 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-gray-800 px-4 py-2 rounded-full transition-all duration-200">Contact Us</a>
+            <a href="/about-us" className="capitalize hover:text-green-900 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-gray-800 px-4 py-2 rounded-full transition-all duration-200">About Us</a>
         </nav>
     );
 }

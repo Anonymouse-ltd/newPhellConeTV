@@ -1,32 +1,101 @@
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useCart } from './CartContext';
 import { useWishlist } from './WishlistContext';
 import { toast } from 'react-toastify';
+import Cookies from 'js-cookie';
 
 export default function ProductGrid({ gadgets, loading }) {
-    const { addToCart } = useCart();
     const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-    const handleAddToCart = (gadget) => {
-        addToCart(gadget);
-        toast.success(`${gadget.name} added to cart!`, {
-            position: "top-center",
-            toastId: `cart-add-${gadget.id}`
-        });
-    };
+    useEffect(() => {
+        const userId = Cookies.get('userId');
+        setIsLoggedIn(!!userId);
+    }, []);
 
-    const handleWishlistToggle = (gadget) => {
-        if (isInWishlist(gadget.id)) {
-            removeFromWishlist(gadget.id);
-            toast.info(`${gadget.name} removed from wishlist.`, {
+    const handleWishlistToggle = async (gadget) => {
+        if (!isLoggedIn) {
+            toast.info('Please log in to use the wishlist feature.', {
                 position: "top-center",
-                toastId: `wishlist-remove-${gadget.id}`
+                toastId: 'login-to-wishlist'
             });
-        } else {
-            addToWishlist(gadget);
-            toast.success(`${gadget.name} added to wishlist!`, {
+            return;
+        }
+
+        try {
+            const userId = Cookies.get('userId');
+            if (!userId) {
+                throw new Error('User ID not found in cookies.');
+            }
+
+            if (isInWishlist(gadget.id)) {
+                removeFromWishlist(gadget.id);
+                toast.info(`${gadget.name} removed from wishlist.`, {
+                    position: "top-center",
+                    toastId: `wishlist-remove-${gadget.id}`
+                });
+
+                // Fetch current wishlist from database to update it
+                const response = await fetch(`/api/user-details/${userId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.wishlist && Array.isArray(data.wishlist)) {
+                        const updatedWishlist = data.wishlist.filter(id => id !== gadget.id);
+                        // Update wishlist in database
+                        await fetch(`/api/user-details/${userId}/update-wishlist`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify({ wishlist: updatedWishlist }),
+                        });
+                    }
+                }
+            } else {
+                addToWishlist(gadget);
+                toast.success(`${gadget.name} added to wishlist!`, {
+                    position: "top-center",
+                    toastId: `wishlist-add-${gadget.id}`
+                });
+
+                // Fetch current wishlist from database to update it
+                const response = await fetch(`/api/user-details/${userId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.wishlist && Array.isArray(data.wishlist)) {
+                        const updatedWishlist = [...data.wishlist, gadget.id];
+                        // Update wishlist in database
+                        await fetch(`/api/user-details/${userId}/update-wishlist`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify({ wishlist: updatedWishlist }),
+                        });
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error updating wishlist:', error);
+            toast.error('Failed to update wishlist. Please try again.', {
                 position: "top-center",
-                toastId: `wishlist-add-${gadget.id}`
+                toastId: 'wishlist-error'
             });
         }
     };
@@ -45,7 +114,6 @@ export default function ProductGrid({ gadgets, loading }) {
         }
         return '';
     };
-
 
     const fixImgSrc = (imgSrc) => {
         if (imgSrc && imgSrc.includes('weihua/weihua nova y72/cover.png')) {
@@ -93,23 +161,25 @@ export default function ProductGrid({ gadgets, loading }) {
                                             : `₱${cleanPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`}
                                     </div>
                                 </Link>
-                                <div className="flex mt-2 ml-auto gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleAddToCart(gadget)}
-                                        className="text-2xl transition hover:scale-125 text-green-700 dark:text-green-400"
-                                        title="Add to cart"
+                                <div className="flex justify-center gap-2 mt-4">
+                                    <Link
+                                        href={`/gadgets/${gadget.id}`}
+                                        className="px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-full font-semibold transition shadow"
+                                        style={{ minWidth: 100, textAlign: 'center', borderRadius: '9999px' }}
                                     >
-                                        🛒
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleWishlistToggle(gadget)}
-                                        className="text-2xl transition hover:scale-125 text-red-500 dark:text-red-400"
-                                        title={isInWishlist(gadget.id) ? 'Remove from wishlist' : 'Add to wishlist'}
-                                    >
-                                        {isInWishlist(gadget.id) ? '❤️' : '🤍'}
-                                    </button>
+                                        View Item
+                                    </Link>
+                                    {isLoggedIn && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleWishlistToggle(gadget)}
+                                            className="w-10 h-10 flex items-center justify-center text-2xl transition hover:scale-125 text-red-500 dark:text-red-400 bg-white dark:bg-gray-700 rounded-full shadow"
+                                            title={isInWishlist(gadget.id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                                            style={{ borderRadius: '9999px' }}
+                                        >
+                                            {isInWishlist(gadget.id) ? '❤️' : '🤍'}
+                                        </button>
+                                    )}
                                 </div>
                             </li>
                         );

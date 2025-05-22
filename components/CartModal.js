@@ -2,10 +2,14 @@ import Link from 'next/link';
 import { useCart } from './CartContext';
 import { toast } from 'react-toastify';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import Cookies from 'js-cookie';
 
 export default function CartModal({ open, onClose }) {
     const { cartItems, removeFromCart, clearCart } = useCart();
     const [isVisible, setIsVisible] = useState(open);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         if (open) {
@@ -16,6 +20,12 @@ export default function CartModal({ open, onClose }) {
         }
     }, [open]);
 
+    useEffect(() => {
+        const userId = Cookies.get('userId');
+        const authToken = Cookies.get('authToken');
+        setIsLoggedIn(!!(userId && authToken));
+    }, []);
+
     const handleClearCart = () => {
         clearCart();
         toast.info('All items removed from cart.', {
@@ -23,6 +33,26 @@ export default function CartModal({ open, onClose }) {
             toastId: "cart-clear-all"
         });
     };
+
+    const handleCheckout = (e) => {
+        if (!isLoggedIn) {
+            e.preventDefault(); // Prevent default navigation
+            toast.error('Please log in to proceed to checkout.', {
+                position: "top-center",
+                toastId: "checkout-login-required"
+            });
+            // Redirect to login and pass the current path to redirect back to checkout after login
+            router.push({
+                pathname: '/login',
+                query: { redirect: '/checkout' },
+            });
+        }
+        // If logged in, allow default Link behavior to navigate to /checkout
+    };
+
+    const hasOutOfStockItem = cartItems.some(item => {
+        return (item.selectedColorStock !== undefined ? item.selectedColorStock : item.stock) === 0;
+    });
 
     if (!isVisible) return null;
 
@@ -41,21 +71,29 @@ export default function CartModal({ open, onClose }) {
                     ) : (
                         <>
                             <ul className="space-y-4">
-                                {cartItems.map((item, idx) => (
-                                    <li key={`${item.id}-${item.selectedColor}-${idx}`} className="flex items-center gap-4">
-                                        <img src={encodeURI(`/${item.brand.toLowerCase()}/${item.name.toLowerCase()}/cover.png`)} alt={item.name} className="w-16 h-16 object-cover rounded" />
-                                        <div className="flex-1">
-                                            <div className="font-semibold text-gray-900 dark:text-gray-100">{item.name}</div>
-                                            <div className="text-sm text-gray-500 dark:text-gray-400">{item.brand}</div>
-                                            {item.selectedColor && (
-                                                <div className="text-sm text-gray-500 dark:text-gray-400">Color: {item.selectedColor}</div>
-                                            )}
-                                            <div className="text-green-700 dark:text-green-400 font-bold">₱{item.price}</div>
-                                        </div>
-                                        <div className="text-gray-700 dark:text-gray-300">x{item.quantity}</div>
-                                        <button onClick={() => removeFromCart(item.id, item.selectedColor)} className="ml-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xl">🗑️</button>
-                                    </li>
-                                ))}
+                                {cartItems.map((item, idx) => {
+                                    const itemStock = item.selectedColorStock !== undefined ? item.selectedColorStock : item.stock;
+                                    const isItemOutOfStock = itemStock === 0;
+
+                                    return (
+                                        <li key={`${item.id}-${item.selectedColor}-${idx}`} className="flex items-center gap-4">
+                                            <img src={encodeURI(`/${item.brand.toLowerCase()}/${item.name.toLowerCase()}/cover.png`)} alt={item.name} className="w-16 h-16 object-cover rounded" />
+                                            <div className="flex-1">
+                                                <div className="font-semibold text-gray-900 dark:text-gray-100">{item.name}</div>
+                                                <div className="text-sm text-gray-500 dark:text-gray-400">{item.brand}</div>
+                                                {item.selectedColor && (
+                                                    <div className="text-sm text-gray-500 dark:text-gray-400">Color: {item.selectedColor}</div>
+                                                )}
+                                                <div className="text-green-700 dark:text-green-400 font-bold">₱{item.price}</div>
+                                                {isItemOutOfStock && (
+                                                    <div className="text-sm text-red-600 dark:text-red-400 font-semibold">Out of Stock</div>
+                                                )}
+                                            </div>
+                                            <div className="text-gray-700 dark:text-gray-300">x{item.quantity}</div>
+                                            <button onClick={() => removeFromCart(item.id, item.selectedColor)} className="ml-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xl">🗑️</button>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                             <button
                                 onClick={handleClearCart}
@@ -69,12 +107,16 @@ export default function CartModal({ open, onClose }) {
                 <div className="p-4 border-t border-gray-200 dark:border-gray-700">
                     <Link
                         href="/checkout"
-                        className="block w-full text-center bg-green-600 dark:bg-green-700 text-white py-2 rounded hover:bg-green-700 dark:hover:bg-green-600 transition disabled:bg-gray-400 dark:disabled:bg-gray-600"
-                        tabIndex={cartItems.length === 0 ? -1 : 0}
-                        aria-disabled={cartItems.length === 0}
-                        style={{ pointerEvents: cartItems.length === 0 ? 'none' : 'auto' }}
+                        className={`block w-full text-center text-white py-2 rounded transition ${cartItems.length === 0 || hasOutOfStockItem
+                            ? 'bg-red-600 dark:bg-red-700 cursor-not-allowed'
+                            : 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600'
+                            }`}
+                        tabIndex={cartItems.length === 0 || hasOutOfStockItem ? -1 : 0}
+                        aria-disabled={cartItems.length === 0 || hasOutOfStockItem}
+                        style={{ pointerEvents: cartItems.length === 0 || hasOutOfStockItem ? 'none' : 'auto' }}
+                        onClick={handleCheckout}
                     >
-                        Go to Checkout
+                        {cartItems.length === 0 ? 'Go to Checkout' : hasOutOfStockItem ? 'Out of Stock' : 'Go to Checkout'}
                     </Link>
                 </div>
             </div>

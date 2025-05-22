@@ -21,6 +21,14 @@ const nextConfig = {
     fileLoaderRule.exclude = /\.svg$/i;
     return config;
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/user-details/:userId/update-wishlist',
+        destination: '/api/update-wishlist',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

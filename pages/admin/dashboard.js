@@ -161,7 +161,7 @@ export default function AdminDashboard() {
     };
 
     if (loading) {
-        return <div className="text-center py-10 text-lg text-gray-700 dark:text-gray-300">Loading...</div>;
+        return <div className="text-center py-10 text-lg text-gray-700">Loading...</div>;
     }
 
     if (!isAuthenticated) {
@@ -169,18 +169,18 @@ export default function AdminDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+        <div className="min-h-screen bg-gray-50 flex">
             <ToastContainer position="top-center" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
             <Sidebar activeSection={activeSection} onSectionChange={handleSectionChange} onLogout={handleLogout} />
             <div className="flex-1 ml-64">
-                <header className="flex items-center justify-between px-8 py-4 bg-white dark:bg-gray-800 shadow dark:shadow-gray-700">
-                    <h1 className="text-xl font-bold text-green-700 dark:text-green-400">
+                <header className="flex items-center justify-between px-8 py-4 bg-white shadow">
+                    <h1 className="text-xl font-bold text-green-700">
                         {activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}
                     </h1>
                 </header>
                 <main className="max-w-6xl mx-auto px-4 py-8">
-                    <h2 className="text-2xl font-bold mb-6 text-green-700 dark:text-green-400">Welcome, Admin</h2>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-700 p-6">
+                    <h2 className="text-2xl font-bold mb-6 text-green-700">Welcome, Admin</h2>
+                    <div className="bg-white rounded-lg shadow p-6">
                         {activeSection === 'overview' && (
                             <Overview
                                 productsCount={products.length}
