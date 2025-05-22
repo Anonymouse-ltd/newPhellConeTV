@@ -5,14 +5,11 @@ let db = null;
 
 export default async function handler(req, res) {
     try {
-        console.log('API request received for gadget-details');
         if (!db) {
-            console.log('Opening database connection to ./phelcone.db');
             db = await open({
                 filename: './phelcone.db',
                 driver: sqlite3.Database,
             });
-            console.log('Database connection successfully opened');
         }
 
         const { id } = req.query;
@@ -21,8 +18,6 @@ export default async function handler(req, res) {
             console.error('No ID provided in request query parameters');
             return res.status(400).json({ error: 'Gadget ID is required' });
         }
-
-        console.log(`Fetching gadget details for ID: ${id}`);
         const gadget = await db.get(
             `SELECT g.*, gd.os, gd.colors, gd.storage, gd.ram, gd.battery, gd.display, gd.processor, gd.camera
              FROM gadgets g
@@ -47,7 +42,6 @@ export default async function handler(req, res) {
             gadget.colors = [];
         }
 
-        console.log(`Successfully fetched gadget details for ID: ${id}`);
         res.status(200).json(gadget);
     } catch (error) {
         console.error('Error fetching gadget details:', error.message);

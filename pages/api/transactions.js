@@ -11,7 +11,7 @@ export default async function handler(req, res) {
                 filename: path.join(process.cwd(), 'phelcone.db'),
                 driver: sqlite3.Database,
             });
-            console.log('Database connection opened for transactions');
+
         }
 
         if (req.method === 'GET') {
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
                 return res.status(404).json({ error: 'Transaction not found' });
             }
 
-            console.log(`Updated status for transaction ID ${transactionId} to ${status}`);
+
             return res.status(200).json({ success: true, message: 'Status updated successfully' });
         } else {
             return res.status(405).json({ error: 'Method not allowed' });

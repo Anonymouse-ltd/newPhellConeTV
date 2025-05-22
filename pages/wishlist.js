@@ -137,8 +137,6 @@ export default function Wishlist() {
             if (!userId) {
                 throw new Error('User ID not found in cookies.');
             }
-
-            // Update the wishlist in the database by removing the ID
             const updatedWishlist = wishlistIds.filter(wishlistId => wishlistId !== id);
             const response = await fetch(`/api/user-details/${userId}/update-wishlist`, {
                 method: 'POST',
@@ -153,7 +151,6 @@ export default function Wishlist() {
                 throw new Error('Failed to update wishlist in database.');
             }
 
-            // Update local state
             setWishlistIds(updatedWishlist);
             setWishlistItems(wishlistItems.filter(item => item.id !== id));
             toast.success('Item removed from wishlist.', {

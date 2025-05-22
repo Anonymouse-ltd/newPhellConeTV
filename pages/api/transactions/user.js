@@ -15,7 +15,6 @@ export default async function handler(req, res) {
                 filename: path.join(process.cwd(), 'phelcone.db'),
                 driver: sqlite3.Database,
             });
-            console.log('Database connection opened for user transactions');
         }
 
         const { userId } = req.query;

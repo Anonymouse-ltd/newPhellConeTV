@@ -15,7 +15,7 @@ export default async function handler(req, res) {
                 filename: './phelcone.db',
                 driver: sqlite3.Database,
             });
-            console.log('Database connection opened for admin login');
+
         }
 
         const { email, password } = req.body;
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Email and password are required' });
         }
 
-        console.log(`Attempting login for email: ${email}`);
+
         const admin = await db.get('SELECT * FROM admin WHERE email = ?', [email]);
 
         if (!admin) {
@@ -37,7 +37,6 @@ export default async function handler(req, res) {
         }
 
         const token = `admin-${email}-${Date.now()}`;
-        console.log(`Login successful for email: ${email}`);
         return res.status(200).json({ token });
     } catch (error) {
         console.error('Error during admin login:', error.message);

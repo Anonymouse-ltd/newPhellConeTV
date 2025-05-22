@@ -14,10 +14,9 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { redirect } = router.query; // Get redirect parameter from URL query
+  const { redirect } = router.query;
 
   useEffect(() => {
-    // Check if user is already logged in
     const userId = Cookies.get('userId');
     const authToken = Cookies.get('authToken');
     if (userId && authToken) {
@@ -59,7 +58,6 @@ export default function Login() {
           position: "top-center",
           toastId: "login-success"
         });
-        // Redirect to the specified page from query parameter or default to home
         router.push(redirect || '/');
       }
     } catch (error) {

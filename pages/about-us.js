@@ -1,9 +1,15 @@
+import { useEffect, useState } from 'react';
 import Header from '../components/Header';
 import Link from 'next/link';
 import { useTheme } from '../components/ThemeContext';
 
 export default function AboutUs() {
     const { theme } = useTheme();
+    const [hasMounted, setHasMounted] = useState(false);
+
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
 
     const teamMembers = [
         {
@@ -39,41 +45,41 @@ export default function AboutUs() {
     ];
 
     return (
-        <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className={`flex flex-col min-h-screen ${hasMounted ? (theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50') : 'bg-gray-50'}`}>
             <Header gadgets={[]} onSearchSelect={() => { }} />
             <main className="flex-grow max-w-6xl mx-auto px-4 py-12">
                 <div className="flex items-center text-sm text-gray-500 mb-6">
-                    <Link href="/" className={`hover:${theme === 'dark' ? 'text-green-400' : 'text-green-700'}`}>Home</Link>
+                    <Link href="/" className={`hover:${hasMounted ? (theme === 'dark' ? 'text-green-400' : 'text-green-700') : 'text-green-700'}`}>Home</Link>
                     <span className="mx-2">›</span>
-                    <span className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} font-medium`}>About Us</span>
+                    <span className={`${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'} font-medium`}>About Us</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
                     <div className="flex flex-col justify-between">
                         <div>
                             <div className="text-sm font-semibold text-yellow-600 mb-2">How It Started</div>
-                            <h1 className={`text-4xl font-bold mb-4 leading-tight ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+                            <h1 className={`text-4xl font-bold mb-4 leading-tight ${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'}`}>
                                 Our Dream is<br />Global Gadget Access
                             </h1>
-                            <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} mb-8`}>
+                            <p className={`${hasMounted ? (theme === 'dark' ? 'text-gray-300' : 'text-gray-600') : 'text-gray-600'} mb-8`}>
                                 Phellcone TV was founded by a team of passionate tech enthusiasts and industry experts. Our mission is to make the latest electronic gadgets accessible to everyone, everywhere. We believe technology should empower and inspire, not intimidate or exclude.
                                 <br /><br />
                                 With dedication and innovation, we built a platform that connects people to authentic gadgets, trusted brands, and real support. Our journey is driven by a commitment to quality, transparency, and customer satisfaction—because you deserve the best in every device you own.
                             </p>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'} rounded-xl p-5 flex flex-col items-center`}>
+                            <div className={`${hasMounted ? (theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50') : 'bg-gray-50'} rounded-xl p-5 flex flex-col items-center`}>
                                 <div className="text-xl font-bold text-green-700">5+</div>
                                 <div className="text-xs text-gray-500 mt-1 text-center">Years Experience</div>
                             </div>
-                            <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'} rounded-xl p-5 flex flex-col items-center`}>
+                            <div className={`${hasMounted ? (theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50') : 'bg-gray-50'} rounded-xl p-5 flex flex-col items-center`}>
                                 <div className="text-xl font-bold text-green-700">50+</div>
                                 <div className="text-xs text-gray-500 mt-1 text-center">Brands Offered</div>
                             </div>
-                            <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'} rounded-xl p-5 flex flex-col items-center`}>
+                            <div className={`${hasMounted ? (theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50') : 'bg-gray-50'} rounded-xl p-5 flex flex-col items-center`}>
                                 <div className="text-xl font-bold text-green-700">10K+</div>
                                 <div className="text-xs text-gray-500 mt-1 text-center">Happy Customers</div>
                             </div>
-                            <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'} rounded-xl p-5 flex flex-col items-center`}>
+                            <div className={`${hasMounted ? (theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50') : 'bg-gray-50'} rounded-xl p-5 flex flex-col items-center`}>
                                 <div className="text-xl font-bold text-green-700">99%</div>
                                 <div className="text-xs text-gray-500 mt-1 text-center">Positive Reviews</div>
                             </div>
@@ -90,10 +96,10 @@ export default function AboutUs() {
                     </div>
                 </div>
                 <section className="mb-16">
-                    <h2 className={`text-2xl font-bold mb-8 text-center ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>Meet the Team</h2>
+                    <h2 className={`text-2xl font-bold mb-8 text-center ${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'}`}>Meet the Team</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {teamMembers.map((member, index) => (
-                            <div key={index} className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl shadow-lg overflow-hidden transition transform hover:-translate-y-1 hover:shadow-xl`}>
+                            <div key={index} className={`${hasMounted ? (theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') : 'bg-white border-gray-200'} border rounded-xl shadow-lg overflow-hidden transition transform hover:-translate-y-1 hover:shadow-xl`}>
                                 <div className="w-full h-56 overflow-hidden">
                                     <img
                                         src={member.image}
@@ -102,9 +108,9 @@ export default function AboutUs() {
                                     />
                                 </div>
                                 <div className="p-5 text-center">
-                                    <h3 className={`text-lg font-semibold mb-1 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{member.name}</h3>
-                                    <div className={`text-sm font-medium mb-3 ${theme === 'dark' ? 'text-green-400' : 'text-green-700'}`}>{member.position}</div>
-                                    <p className={`text-sm italic ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>"{member.quote}"</p>
+                                    <h3 className={`text-lg font-semibold mb-1 ${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'}`}>{member.name}</h3>
+                                    <div className={`text-sm font-medium mb-3 ${hasMounted ? (theme === 'dark' ? 'text-green-400' : 'text-green-700') : 'text-green-700'}`}>{member.position}</div>
+                                    <p className={`text-sm italic ${hasMounted ? (theme === 'dark' ? 'text-gray-300' : 'text-gray-600') : 'text-gray-600'}`}>"{member.quote}"</p>
                                 </div>
                             </div>
                         ))}

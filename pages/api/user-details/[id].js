@@ -6,14 +6,11 @@ let db = null;
 
 export default async function handler(req, res) {
     try {
-        console.log('API request received for user-details');
         if (!db) {
-            console.log('Opening database connection to ./phelcone.db');
             db = await open({
                 filename: path.join(process.cwd(), 'phelcone.db'),
                 driver: sqlite3.Database,
             });
-            console.log('Database connection successfully opened');
         }
 
         const { id } = req.query;
@@ -22,8 +19,6 @@ export default async function handler(req, res) {
             console.error('No ID provided in request query parameters');
             return res.status(400).json({ error: 'User ID is required' });
         }
-
-        console.log(`Fetching user details for ID: ${id}`);
         const user = await db.get(
             `SELECT * FROM user_details WHERE user_id = ?`,
             [id]
@@ -34,7 +29,6 @@ export default async function handler(req, res) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Parse wishlist if it's stored as a JSON string
         if (user.wishlist && typeof user.wishlist === 'string') {
             try {
                 user.wishlist = JSON.parse(user.wishlist) || [];
@@ -45,8 +39,6 @@ export default async function handler(req, res) {
         } else if (!user.wishlist) {
             user.wishlist = [];
         }
-
-        console.log(`Successfully fetched user details for ID: ${id}`);
         res.status(200).json(user);
     } catch (error) {
         console.error('Error fetching user details:', error.message);

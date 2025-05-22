@@ -41,7 +41,6 @@ export default function Header({ gadgets = [], onSearchSelect }) {
     useEffect(() => {
         if (hasMounted) {
             const totalCount = cartItems.reduce((sum, item) => sum + (Number.isInteger(item.quantity) ? item.quantity : 0), 0);
-            console.log(`Cart item count updated: ${totalCount}`);
             setCartItemCount(totalCount);
         }
     }, [cartItems, hasMounted]);

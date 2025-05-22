@@ -14,7 +14,6 @@ export default async function handler(req, res) {
                 filename: './phelcone.db',
                 driver: sqlite3.Database,
             });
-            console.log('Database connection opened for edit-product');
         }
 
         const { id } = req.query;
@@ -45,8 +44,6 @@ export default async function handler(req, res) {
             );
         }
         await db.run('COMMIT');
-
-        console.log(`Product updated successfully with ID: ${id}`);
         return res.status(200).json({ id, message: 'Product updated successfully' });
     } catch (error) {
         if (db) {

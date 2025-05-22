@@ -35,7 +35,6 @@ export default function ProductGrid({ gadgets, loading }) {
                     toastId: `wishlist-remove-${gadget.id}`
                 });
 
-                // Fetch current wishlist from database to update it
                 const response = await fetch(`/api/user-details/${userId}`, {
                     method: 'GET',
                     headers: {
@@ -48,7 +47,6 @@ export default function ProductGrid({ gadgets, loading }) {
                     const data = await response.json();
                     if (data && data.wishlist && Array.isArray(data.wishlist)) {
                         const updatedWishlist = data.wishlist.filter(id => id !== gadget.id);
-                        // Update wishlist in database
                         await fetch(`/api/user-details/${userId}/update-wishlist`, {
                             method: 'POST',
                             headers: {
@@ -66,7 +64,6 @@ export default function ProductGrid({ gadgets, loading }) {
                     toastId: `wishlist-add-${gadget.id}`
                 });
 
-                // Fetch current wishlist from database to update it
                 const response = await fetch(`/api/user-details/${userId}`, {
                     method: 'GET',
                     headers: {
@@ -79,7 +76,6 @@ export default function ProductGrid({ gadgets, loading }) {
                     const data = await response.json();
                     if (data && data.wishlist && Array.isArray(data.wishlist)) {
                         const updatedWishlist = [...data.wishlist, gadget.id];
-                        // Update wishlist in database
                         await fetch(`/api/user-details/${userId}/update-wishlist`, {
                             method: 'POST',
                             headers: {

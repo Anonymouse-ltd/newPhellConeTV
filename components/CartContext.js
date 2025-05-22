@@ -40,7 +40,6 @@ export function CartProvider({ children }) {
         }
 
         setCartItems((prev) => {
-            console.log(`CartContext addToCart: ID=${gadget.id}, Color=${gadget.selectedColor}, Quantity=${incomingQuantity}`);
             const found = prev.find(item => item.id === gadget.id && item.selectedColor === gadget.selectedColor);
             if (found) {
                 const newQuantity = (Number.isInteger(found.quantity) ? found.quantity : 0) + incomingQuantity;

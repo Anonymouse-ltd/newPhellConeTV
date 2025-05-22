@@ -134,10 +134,9 @@ export default function GadgetDetail({ gadget, images = [], relatedGadgets = [] 
 export async function getServerSideProps(context) {
     const { id } = context.params;
     try {
-        // Use an absolute URL for development, adjust for production if needed
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
         const gadgetEndpoint = `${apiBaseUrl}/api/gadget-details/${id}`;
-        console.log(`Fetching gadget details from: ${gadgetEndpoint}`);
+
         const gadgetRes = await fetch(gadgetEndpoint);
         if (!gadgetRes.ok) {
             throw new Error(`Failed to fetch gadget details: ${gadgetRes.status}`);
@@ -145,7 +144,7 @@ export async function getServerSideProps(context) {
         const gadget = await gadgetRes.json();
 
         const allGadgetsEndpoint = `${apiBaseUrl}/api/gadgets`;
-        console.log(`Fetching all gadgets from: ${allGadgetsEndpoint}`);
+
         const allGadgetsRes = await fetch(allGadgetsEndpoint);
         if (!allGadgetsRes.ok) {
             throw new Error(`Failed to fetch all gadgets: ${allGadgetsRes.status}`);

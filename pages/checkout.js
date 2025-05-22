@@ -176,7 +176,6 @@ export default function Checkout() {
 
 
             const data = await response.json();
-            console.log('Transaction response:', data);
             setOrderResult(data.receiptData);
             setShowReceipt(true);
             clearCart();

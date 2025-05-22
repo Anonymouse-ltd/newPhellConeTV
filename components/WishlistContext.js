@@ -36,7 +36,6 @@ export function WishlistProvider({ children }) {
 
             const data = await response.json();
             if (data && data.wishlist && Array.isArray(data.wishlist)) {
-                // Fetch full gadget details for each ID
                 const items = [];
                 for (const id of data.wishlist) {
                     try {

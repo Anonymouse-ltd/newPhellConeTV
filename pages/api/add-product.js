@@ -14,7 +14,6 @@ export default async function handler(req, res) {
                 filename: './phelcone.db',
                 driver: sqlite3.Database,
             });
-            console.log('Database connection opened for add-product');
         }
 
         const { brand, name, price, os, color, storage, ram, battery, display, processor, camera } = req.body;
@@ -39,7 +38,6 @@ export default async function handler(req, res) {
 
         await db.run('COMMIT');
 
-        console.log(`Product added successfully with ID: ${gadgetId}`);
         return res.status(201).json({ id: gadgetId, message: 'Product added successfully' });
     } catch (error) {
         if (db) {

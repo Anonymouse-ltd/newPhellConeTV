@@ -34,7 +34,6 @@ export default function useGadgetActions({
         }
         if (gadget) {
             const validQuantity = Number.isInteger(quantity) ? quantity : 1;
-            console.log(`Adding to cart: ${gadget.name}, Color: ${selectedColor}, Quantity: ${validQuantity}`);
             const cartItem = { ...gadget, selectedColor, quantity: validQuantity, selectedColorStock: selectedColorObj.stock };
             addToCart(cartItem);
             toast.success(`${gadget.name} (${selectedColor}) added to cart!`, {

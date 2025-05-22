@@ -21,12 +21,12 @@ export default async function handler(req, res) {
 
     try {
         if (!db) {
-            console.log('Opening database connection to ./phelcone.db');
+
             db = await open({
                 filename: path.join(process.cwd(), 'phelcone.db'),
                 driver: sqlite3.Database,
             });
-            console.log('Database connection successfully opened');
+
         }
 
         // Ensure user exists
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
             [JSON.stringify(wishlist), userId]
         );
 
-        console.log(`Successfully updated wishlist for user ID: ${userId}`);
+
         res.status(200).json({ success: true, message: 'Wishlist updated successfully' });
     } catch (error) {
         console.error(`Error updating wishlist for user ID ${userId}:`, error.message);

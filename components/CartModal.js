@@ -36,18 +36,17 @@ export default function CartModal({ open, onClose }) {
 
     const handleCheckout = (e) => {
         if (!isLoggedIn) {
-            e.preventDefault(); // Prevent default navigation
+            e.preventDefault();
             toast.error('Please log in to proceed to checkout.', {
                 position: "top-center",
                 toastId: "checkout-login-required"
             });
-            // Redirect to login and pass the current path to redirect back to checkout after login
+
             router.push({
                 pathname: '/login',
                 query: { redirect: '/checkout' },
             });
         }
-        // If logged in, allow default Link behavior to navigate to /checkout
     };
 
     const hasOutOfStockItem = cartItems.some(item => {

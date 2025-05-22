@@ -13,11 +13,7 @@ export default function GadgetDetailInfo({
     isInWishlist,
     getBackgroundColor
 }) {
-    const isOutOfStock = selectedColorObj.stock === 0 || selectedColorObj.stock === '0'; // Ensure string '0' is handled
-
-    // Debug log to check stock value
-    console.log(`Selected Color: ${selectedColor}, Stock: ${selectedColorObj.stock}, Is Out of Stock: ${isOutOfStock}`);
-
+    const isOutOfStock = selectedColorObj.stock === 0 || selectedColorObj.stock === '0';
     return (
         <div className="flex flex-col gap-6">
             <div>
@@ -39,7 +35,7 @@ export default function GadgetDetailInfo({
                                     ${selectedColor === color
                                         ? 'border-green-600 bg-green-100 dark:bg-green-900 text-gray-800 dark:text-gray-100'
                                         : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-100'}`}
-                                disabled={false} // Allow selection even if stock is 0
+                                disabled={false}
                             >
                                 <span
                                     className="inline-block w-4 h-4 rounded-full border mr-2"
@@ -73,8 +69,8 @@ export default function GadgetDetailInfo({
                 <button
                     onClick={handleAddToCart}
                     className={`flex-1 py-3 rounded-lg text-white text-lg font-semibold flex items-center justify-center transition-all duration-200 ${isOutOfStock
-                            ? 'bg-red-600 dark:bg-red-700 cursor-not-allowed'
-                            : 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600'
+                        ? 'bg-red-600 dark:bg-red-700 cursor-not-allowed'
+                        : 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600'
                         }`}
                     disabled={isOutOfStock || quantity < 1}
                 >
@@ -83,8 +79,8 @@ export default function GadgetDetailInfo({
                 <button
                     onClick={handleBuyNow}
                     className={`px-4 py-3 rounded-lg text-white text-lg font-semibold transition-all duration-200 ${isOutOfStock
-                            ? 'bg-red-600 dark:bg-red-700 cursor-not-allowed'
-                            : 'bg-yellow-500 dark:bg-yellow-600 hover:bg-yellow-600 dark:hover:bg-yellow-500'
+                        ? 'bg-red-600 dark:bg-red-700 cursor-not-allowed'
+                        : 'bg-yellow-500 dark:bg-yellow-600 hover:bg-yellow-600 dark:hover:bg-yellow-500'
                         }`}
                     disabled={isOutOfStock || quantity < 1}
                 >

@@ -30,7 +30,6 @@ export default async function handler(req, res) {
                 filename: './phelcone.db',
                 driver: sqlite3.Database,
             });
-            console.log('Database connection opened for signup');
         }
 
         const existingUsername = await db.get('SELECT id FROM users WHERE username = ?', username);

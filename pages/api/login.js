@@ -15,7 +15,7 @@ export default async function handler(req, res) {
                 filename: './phelcone.db',
                 driver: sqlite3.Database,
             });
-            console.log('Database connection opened for login');
+
         }
 
         const { email, password } = req.body;

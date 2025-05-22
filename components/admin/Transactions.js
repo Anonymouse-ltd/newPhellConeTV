@@ -25,7 +25,6 @@ export default function Transactions({ transactions, isLoadingData }) {
                 throw new Error(errorData.error || 'Failed to update status');
             }
 
-            // Update local state to reflect the change immediately
             setTransactionData(prevData =>
                 prevData.map(transaction =>
                     transaction.id === transactionId
