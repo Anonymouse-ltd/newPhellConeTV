@@ -46,6 +46,14 @@ export default function ProductGrid({ gadgets, loading }) {
         return '';
     };
 
+
+    const fixImgSrc = (imgSrc) => {
+        if (imgSrc && imgSrc.includes('weihua/weihua nova y72/cover.png')) {
+            return imgSrc.replace('weihua nova y72', 'weihua nova Y72');
+        }
+        return imgSrc;
+    };
+
     return (
         <main className="max-w-7xl mx-auto px-4 py-8 bg-gray-50 dark:bg-gray-900">
             <h2 className="text-3xl font-extrabold mb-8 text-green-700 dark:text-green-400 tracking-tight">All Gadgets</h2>
@@ -65,7 +73,7 @@ export default function ProductGrid({ gadgets, loading }) {
                                 <Link href={`/gadgets/${gadget.id}`} className="flex flex-col h-full">
                                     <div className="h-52 w-full bg-gray-100 dark:bg-gray-700 rounded-xl mb-4 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-300">
                                         <img
-                                            src={gadget.imgSrc}
+                                            src={fixImgSrc(gadget.imgSrc)}
                                             alt={`${gadget.name} cover`}
                                             className="max-h-full max-w-full object-contain rounded-xl bg-white dark:bg-gray-800"
                                             style={{ display: 'block', margin: '0 auto' }}

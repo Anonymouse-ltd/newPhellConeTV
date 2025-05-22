@@ -42,15 +42,21 @@ export default function GadgetDetail({ gadget, images = [], relatedGadgets = [] 
     };
 
     const handleQuantityChange = (e) => {
-        let val = parseInt(e.target.value, 10);
-        if (isNaN(val) || val < 1) val = 1;
-        if (val > selectedColorObj.stock) val = selectedColorObj.stock;
-        setQuantity(val);
+        const val = parseInt(e.target.value, 10);
+        if (isNaN(val) || val < 1) {
+            setQuantity(1);
+        } else if (val > selectedColorObj.stock) {
+            setQuantity(selectedColorObj.stock);
+        } else {
+            setQuantity(val);
+        }
     };
 
     const handleAddToCart = () => {
         if (gadget) {
-            const cartItem = { ...gadget, selectedColor, quantity };
+            const validQuantity = Number.isInteger(quantity) ? quantity : 1;
+            console.log(`Adding to cart: ${gadget.name}, Color: ${selectedColor}, Quantity: ${validQuantity}`);
+            const cartItem = { ...gadget, selectedColor, quantity: validQuantity };
             addToCart(cartItem);
             toast.success(`${gadget.name} (${selectedColor}) added to cart!`, {
                 position: "top-center",
@@ -337,14 +343,19 @@ export default function GadgetDetail({ gadget, images = [], relatedGadgets = [] 
 export async function getServerSideProps(context) {
     const { id } = context.params;
     try {
+        // Use an absolute URL for development, adjust for production if needed
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
-        const gadgetRes = await fetch(`${apiBaseUrl}/api/gadget-details/${id}`);
+        const gadgetEndpoint = `${apiBaseUrl}/api/gadget-details/${id}`;
+        console.log(`Fetching gadget details from: ${gadgetEndpoint}`);
+        const gadgetRes = await fetch(gadgetEndpoint);
         if (!gadgetRes.ok) {
             throw new Error(`Failed to fetch gadget details: ${gadgetRes.status}`);
         }
         const gadget = await gadgetRes.json();
 
-        const allGadgetsRes = await fetch(`${apiBaseUrl}/api/gadgets`);
+        const allGadgetsEndpoint = `${apiBaseUrl}/api/gadgets`;
+        console.log(`Fetching all gadgets from: ${allGadgetsEndpoint}`);
+        const allGadgetsRes = await fetch(allGadgetsEndpoint);
         if (!allGadgetsRes.ok) {
             throw new Error(`Failed to fetch all gadgets: ${allGadgetsRes.status}`);
         }

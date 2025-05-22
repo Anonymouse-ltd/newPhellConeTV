@@ -37,7 +37,10 @@ export default function Header({ gadgets = [], onSearchSelect }) {
     }, []);
 
     useEffect(() => {
-        setCartItemCount(cartItems.reduce((sum, item) => sum + item.qty, 0));
+        // Calculate total items in cart using 'quantity' instead of 'qty'
+        const totalCount = cartItems.reduce((sum, item) => sum + (Number.isInteger(item.quantity) ? item.quantity : 0), 0);
+        console.log(`Cart item count updated: ${totalCount}`);
+        setCartItemCount(totalCount);
     }, [cartItems]);
 
     useEffect(() => {
@@ -143,7 +146,6 @@ export default function Header({ gadgets = [], onSearchSelect }) {
                                 {cartItemCount}
                             </span>
                         </button>
-
                         {/* Theme toggle – fix for hydration mismatch */}
                         {hasMounted && (
                             <button
@@ -158,7 +160,6 @@ export default function Header({ gadgets = [], onSearchSelect }) {
                                 )}
                             </button>
                         )}
-
                         {isAuthenticated ? (
                             <div className="relative">
                                 <button

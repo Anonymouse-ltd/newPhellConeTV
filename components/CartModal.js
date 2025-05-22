@@ -42,15 +42,18 @@ export default function CartModal({ open, onClose }) {
                         <>
                             <ul className="space-y-4">
                                 {cartItems.map((item, idx) => (
-                                    <li key={item.id} className="flex items-center gap-4">
+                                    <li key={`${item.id}-${item.selectedColor}-${idx}`} className="flex items-center gap-4">
                                         <img src={encodeURI(`/${item.brand.toLowerCase()}/${item.name.toLowerCase()}/cover.png`)} alt={item.name} className="w-16 h-16 object-cover rounded" />
                                         <div className="flex-1">
                                             <div className="font-semibold text-gray-900 dark:text-gray-100">{item.name}</div>
                                             <div className="text-sm text-gray-500 dark:text-gray-400">{item.brand}</div>
+                                            {item.selectedColor && (
+                                                <div className="text-sm text-gray-500 dark:text-gray-400">Color: {item.selectedColor}</div>
+                                            )}
                                             <div className="text-green-700 dark:text-green-400 font-bold">₱{item.price}</div>
                                         </div>
-                                        <div className="text-gray-700 dark:text-gray-300">x{item.qty}</div>
-                                        <button onClick={() => removeFromCart(item.id)} className="ml-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xl">🗑️</button>
+                                        <div className="text-gray-700 dark:text-gray-300">x{item.quantity}</div>
+                                        <button onClick={() => removeFromCart(item.id, item.selectedColor)} className="ml-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xl">🗑️</button>
                                     </li>
                                 ))}
                             </ul>
