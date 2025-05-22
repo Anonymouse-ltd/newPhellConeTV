@@ -196,13 +196,7 @@ export default function Header({ gadgets = [], onSearchSelect }) {
                                         >
                                             My Profile
                                         </Link>
-                                        <Link
-                                            href="/transactions"
-                                            className="block px-4 py-2 hover:bg-green-50 dark:hover:bg-green-900 transition-all duration-200 text-gray-800 dark:text-gray-200"
-                                            onClick={() => setIsProfileDropdownOpen(false)}
-                                        >
-                                            Transactions
-                                        </Link>
+
                                         <Link
                                             href="/wishlist"
                                             className="block px-4 py-2 hover:bg-green-50 dark:hover:bg-green-900 transition-all duration-200 text-gray-800 dark:text-gray-200"

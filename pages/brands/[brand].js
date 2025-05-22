@@ -2,8 +2,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Header from '../../components/Header';
 import ProductGrid from '../../components/ProductGrid';
-import fs from 'fs';
-import path from 'path';
+import { findCoverImage } from '../../components/gadgetDetail/utils';
 
 export default function BrandPage({ gadgets = [], brand = 'Unknown' }) {
     const router = useRouter();
@@ -66,7 +65,6 @@ export async function getStaticProps({ params }) {
         const brand = params.brand;
         const filteredGadgets = allGadgets.filter(g => g.brand.toLowerCase() === brand.toLowerCase());
 
-        // Add imgSrc to each gadget
         const gadgets = filteredGadgets.map(gadget => {
             const imgSrc = findCoverImage(gadget.brand, gadget.name);
             return { ...gadget, imgSrc };
@@ -77,7 +75,7 @@ export async function getStaticProps({ params }) {
                 gadgets,
                 brand
             },
-            revalidate: 3600 // Revalidate every hour
+            revalidate: 3600
         };
     } catch (error) {
         console.error(`Error fetching gadgets for brand ${params.brand}:`, error);
@@ -90,28 +88,3 @@ export async function getStaticProps({ params }) {
     }
 }
 
-function findCoverImage(brand, gadgetName) {
-    const baseDir = path.join(process.cwd(), 'public', brand.toLowerCase());
-    const folderVariations = [
-        gadgetName.toLowerCase(),
-        gadgetName.toUpperCase(),
-        gadgetName
-    ];
-    for (const folder of folderVariations) {
-        const folderPath = path.join(baseDir, folder);
-        try {
-            if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
-                const files = fs.readdirSync(folderPath);
-                for (const file of files) {
-                    const fileNameWithoutExt = path.basename(file, path.extname(file)).toLowerCase();
-                    if (fileNameWithoutExt === 'cover') {
-                        return `/${brand.toLowerCase()}/${folder}/${file}`;
-                    }
-                }
-            }
-        } catch (err) {
-            console.error(`Error checking folder ${folderPath}:`, err);
-        }
-    }
-    return `/${brand.toLowerCase()}/${gadgetName.toLowerCase()}/cover.png`;
-}

@@ -12,7 +12,6 @@ export default function Profile() {
     const [loading, setLoading] = useState(true);
     const [userId, setUserId] = useState(null);
     const [userDetails, setUserDetails] = useState(null);
-    const [activeTab, setActiveTab] = useState('profile');
 
     useEffect(() => {
         const authToken = Cookies.get('authToken');
@@ -45,12 +44,18 @@ export default function Profile() {
         if (!birthday) return 'Not set';
         const bday = new Date(birthday);
         const today = new Date();
-        const age = today.getFullYear() - bday.getFullYear();
-        const monthDiff = today.getMonth() - bday.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < bday.getDate())) {
-            return age - 1;
+        let age = today.getFullYear() - bday.getFullYear();
+        const m = today.getMonth() - bday.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < bday.getDate())) {
+            age--;
         }
         return age;
+    };
+
+    const formatBirthday = (birthday) => {
+        if (!birthday) return 'Not set';
+        const date = new Date(birthday);
+        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     };
 
     if (loading) {
@@ -67,137 +72,81 @@ export default function Profile() {
                 <title>My Profile - Phellcone TV</title>
             </Head>
             <Header gadgets={[]} onSearchSelect={() => { }} />
-            <main className="flex-grow max-w-7xl mx-auto px-4 py-8">
-                <h1 className="text-3xl font-extrabold mb-8 text-green-700 dark:text-green-400 tracking-tight">My Profile</h1>
-                <div className="flex flex-col md:flex-row gap-6">
-                    <div className="w-full md:w-1/4 bg-white dark:bg-gray-800 rounded-2xl shadow-md dark:shadow-gray-700 p-6">
-                        <div className="flex flex-col items-center mb-6">
+            <main className="flex-grow max-w-5xl mx-auto px-4 py-12">
+                <h1 className="text-3xl font-extrabold mb-10 text-green-700 dark:text-green-400 tracking-tight text-center">My Profile</h1>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+                    <section className="col-span-1 bg-white dark:bg-gray-800 rounded-2xl shadow-lg flex flex-col items-center p-8">
+                        <div className="w-28 h-28 mb-4 rounded-full border-4 border-green-100 dark:border-green-900 bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
                             {userDetails && userDetails.avatar ? (
                                 <img
                                     src={userDetails.avatar}
                                     alt="User Avatar"
-                                    className="w-24 h-24 rounded-full object-cover mb-2"
+                                    className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-2">
-                                    <UserIcon className="h-12 w-12 text-gray-500 dark:text-gray-400" />
-                                </div>
+                                <UserIcon className="h-16 w-16 text-gray-400 dark:text-gray-500" />
                             )}
                         </div>
-                        <div className="space-y-2">
-                            <button
-                                onClick={() => setActiveTab('profile')}
-                                className={`w-full text-left px-4 py-2 rounded-lg ${activeTab === 'profile' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                            >
-                                Profile
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('transactions')}
-                                className={`w-full text-left px-4 py-2 rounded-lg ${activeTab === 'transactions' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                            >
-                                Transactions
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('wishlist')}
-                                className={`w-full text-left px-4 py-2 rounded-lg ${activeTab === 'wishlist' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                            >
-                                Wishlist
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('favorites')}
-                                className={`w-full text-left px-4 py-2 rounded-lg ${activeTab === 'favorites' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                            >
-                                Favorites
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('cart')}
-                                className={`w-full text-left px-4 py-2 rounded-lg ${activeTab === 'cart' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                            >
-                                Cart
-                            </button>
-                            <Link
-                                href="/settings"
-                                className="block w-full text-left px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            >
-                                Settings
+                        <div className="text-center mb-6">
+                            <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{userDetails?.name || 'Not set'}</div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">{userDetails?.email || 'Not available'}</div>
+                        </div>
+                        <div className="w-full text-center">
+                            <Link href="/settings" className="inline-block w-full bg-green-600 dark:bg-green-700 text-white font-semibold rounded-lg py-2 hover:bg-green-700 dark:hover:bg-green-600 transition-all duration-200">
+                                Edit Profile
                             </Link>
                         </div>
-                    </div>
-                    <div className="w-full md:w-3/4 bg-white dark:bg-gray-800 rounded-2xl shadow-md dark:shadow-gray-700 p-6">
-                        {activeTab === 'profile' && (
-                            <div>
-                                <h3 className="text-xl font-semibold text-green-700 dark:text-green-400 mb-4">Profile Information</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Email</p>
-                                        <p className="text-gray-800 dark:text-gray-200 font-medium">{userDetails ? userDetails.email || 'Not available' : 'Loading...'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Name</p>
-                                        <p className="text-gray-800 dark:text-gray-200 font-medium">{userDetails ? userDetails.name || 'Not set' : 'Loading...'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Phone</p>
-                                        <p className="text-gray-800 dark:text-gray-200 font-medium">{userDetails ? userDetails.phone || 'Not set' : 'Loading...'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Address</p>
-                                        <p className="text-gray-800 dark:text-gray-200 font-medium">{userDetails ? userDetails.address || 'Not set' : 'Loading...'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Birthday</p>
-                                        <p className="text-gray-800 dark:text-gray-200 font-medium">{userDetails ? userDetails.birthday || 'Not set' : 'Loading...'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Age</p>
-                                        <p className="text-gray-800 dark:text-gray-200 font-medium">{userDetails && userDetails.birthday ? calculateAge(userDetails.birthday) : 'Not set'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">PWD Status</p>
-                                        <p className="text-gray-800 dark:text-gray-200 font-medium">{userDetails ? (userDetails.is_pwd ? 'Yes' : 'No') : 'Loading...'}</p>
-                                    </div>
-                                </div>
-                                <div className="mt-6">
-                                    <Link href="/settings" className="inline-block bg-green-600 dark:bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-all duration-200">
-                                        Edit Profile
-                                    </Link>
-                                </div>
+                    </section>
+                    <section className="col-span-2 flex flex-col gap-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 flex flex-col items-start">
+                                <span className="text-xs text-gray-400 dark:text-gray-500 mb-1">Phone</span>
+                                <span className="text-base font-medium text-gray-900 dark:text-gray-100">{userDetails?.phone || 'Not set'}</span>
                             </div>
-                        )}
-                        {activeTab === 'transactions' && (
-                            <div>
-                                <h3 className="text-xl font-semibold text-green-700 dark:text-green-400 mb-4">Transactions</h3>
-                                <p className="text-gray-500 dark:text-gray-400 italic">No transactions found.</p>
-                                <div className="mt-6 text-center py-4 text-gray-700 dark:text-gray-300">Your transaction history will appear here.</div>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 flex flex-col items-start">
+                                <span className="text-xs text-gray-400 dark:text-gray-500 mb-1">Address</span>
+                                <span className="text-base font-medium text-gray-900 dark:text-gray-100">{userDetails?.address || 'Not set'}</span>
                             </div>
-                        )}
-                        {activeTab === 'wishlist' && (
-                            <div>
-                                <h3 className="text-xl font-semibold text-green-700 dark:text-green-400 mb-4">Wishlist</h3>
-                                <p className="text-gray-500 dark:text-gray-400 italic">Your wishlist is empty.</p>
-                                <div className="mt-6 text-center py-4 text-gray-700 dark:text-gray-300">Add items to your wishlist to see them here.</div>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 flex flex-col items-start">
+                                <span className="text-xs text-gray-400 dark:text-gray-500 mb-1">Birthday</span>
+                                <span className="text-base font-medium text-gray-900 dark:text-gray-100">{userDetails?.birthday ? formatBirthday(userDetails.birthday) : 'Not set'}</span>
                             </div>
-                        )}
-                        {activeTab === 'favorites' && (
-                            <div>
-                                <h3 className="text-xl font-semibold text-green-700 dark:text-green-400 mb-4">Favorites</h3>
-                                <p className="text-gray-500 dark:text-gray-400 italic">You have no favorite items.</p>
-                                <div className="mt-6 text-center py-4 text-gray-700 dark:text-gray-300">Mark items as favorites to see them here.</div>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 flex flex-col items-start">
+                                <span className="text-xs text-gray-400 dark:text-gray-500 mb-1">Age</span>
+                                <span className="text-base font-medium text-gray-900 dark:text-gray-100">{userDetails?.birthday ? calculateAge(userDetails.birthday) : 'Not set'}</span>
                             </div>
-                        )}
-                        {activeTab === 'cart' && (
-                            <div>
-                                <h3 className="text-xl font-semibold text-green-700 dark:text-green-400 mb-4">Cart</h3>
-                                <p className="text-gray-500 dark:text-gray-400 italic">Your cart is empty.</p>
-                                <div className="mt-6 text-center py-4 text-gray-700 dark:text-gray-300">Add items to your cart to see them here.</div>
-                                <div className="mt-4 flex justify-center">
-                                    <Link href="/" className="inline-block bg-green-600 dark:bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-all duration-200">
-                                        Shop Now
-                                    </Link>
-                                </div>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 flex flex-col items-start">
+                                <span className="text-xs text-gray-400 dark:text-gray-500 mb-1">PWD Status</span>
+                                <span className="text-base font-medium text-gray-900 dark:text-gray-100">{userDetails?.is_pwd ? 'Yes' : 'No'}</span>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <Link href="/wishlist" className="bg-green-50 dark:bg-green-900 rounded-xl shadow flex flex-col items-center py-5 hover:bg-green-100 dark:hover:bg-green-800 transition">
+                                <svg className="w-7 h-7 text-green-600 mb-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                                </svg>
+                                <span className="font-semibold text-green-700 dark:text-green-400 text-sm">Wishlist</span>
+                            </Link>
+                            <Link href="/cart" className="bg-green-50 dark:bg-green-900 rounded-xl shadow flex flex-col items-center py-5 hover:bg-green-100 dark:hover:bg-green-800 transition">
+                                <svg className="w-7 h-7 text-green-600 mb-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7A2 2 0 007.6 19h8.8a2 2 0 001.95-2.3L17 13M7 13V6a1 1 0 011-1h3m4 0h2a1 1 0 011 1v7" />
+                                </svg>
+                                <span className="font-semibold text-green-700 dark:text-green-400 text-sm">Cart</span>
+                            </Link>
+                            <Link href="/settings" className="bg-green-50 dark:bg-green-900 rounded-xl shadow flex flex-col items-center py-5 hover:bg-green-100 dark:hover:bg-green-800 transition">
+                                <svg className="w-7 h-7 text-green-600 mb-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                </svg>
+                                <span className="font-semibold text-green-700 dark:text-green-400 text-sm">Settings</span>
+                            </Link>
+                            <Link href="/purchase" className="bg-green-50 dark:bg-green-900 rounded-xl shadow flex flex-col items-center py-5 hover:bg-green-100 dark:hover:bg-green-800 transition">
+                                <svg className="w-7 h-7 text-green-600 mb-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span className="font-semibold text-green-700 dark:text-green-400 text-sm">Purchases</span>
+                            </Link>
+                        </div>
+                    </section>
                 </div>
             </main>
             <footer className="p-6 text-center text-sm text-gray-400 dark:text-gray-500 bg-gray-900 dark:bg-gray-800 mt-auto">
