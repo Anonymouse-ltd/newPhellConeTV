@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
-const ThemeContext = createContext();
+const ThemeContext = createContext({ theme: 'light', toggleTheme: () => { } });
 
 export const useTheme = () => useContext(ThemeContext);
 
@@ -11,8 +11,10 @@ export const ThemeProvider = ({ children }) => {
         if (savedTheme) return savedTheme;
         return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     });
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         if (typeof window !== 'undefined') {
             localStorage.setItem('theme', theme);
             if (theme === 'dark') {
@@ -29,7 +31,7 @@ export const ThemeProvider = ({ children }) => {
 
     return (
         <ThemeContext.Provider value={{ theme, toggleTheme }}>
-            {children}
+            {mounted ? children : <div style={{ visibility: 'hidden' }}>{children}</div>}
         </ThemeContext.Provider>
     );
 };

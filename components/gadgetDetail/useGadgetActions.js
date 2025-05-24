@@ -56,11 +56,25 @@ export default function useGadgetActions({
                 position: "top-center",
                 toastId: "buy-now-login-required"
             });
-            router.push('/login');
+            router.push('/login?redirect=/checkout');
         } else {
-            router.push('/checkout');
+            router.push({
+                pathname: '/checkout',
+                query: {
+                    buyNow: JSON.stringify({
+                        id: gadget.id,
+                        name: gadget.name,
+                        brand: gadget.brand,
+                        price: gadget.price,
+                        quantity: Number.isInteger(quantity) ? quantity : 1,
+                        selectedColor: selectedColor,
+                        selectedColorStock: selectedColorObj.stock // Include stock for validation
+                    })
+                }
+            });
         }
     };
+
 
     const handleWishlistToggle = async () => {
         if (!isAuthenticated) {

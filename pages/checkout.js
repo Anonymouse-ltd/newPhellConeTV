@@ -19,8 +19,11 @@ export default function Checkout() {
     const [images, setImages] = useState({});
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [buyNowItem, setBuyNowItem] = useState(null);
     const { theme } = useTheme();
     const router = useRouter();
+    const { buyNow } = router.query;
+
     useEffect(() => {
         setHasMounted(true);
         const userId = Cookies.get('userId');
@@ -38,8 +41,16 @@ export default function Checkout() {
                 query: { redirect: '/checkout' },
             });
         }
-    }, [router]);
-
+        if (buyNow) {
+            try {
+                const parsedItem = JSON.parse(buyNow);
+                setBuyNowItem(parsedItem);
+            } catch (error) {
+                console.error('Error parsing buyNow item:', error);
+                setBuyNowItem(null);
+            }
+        }
+    }, [router, buyNow]);
     useEffect(() => {
         if (hasMounted && isLoggedIn) {
             const fetchUserDetails = async () => {
@@ -86,50 +97,59 @@ export default function Checkout() {
         }
     }, [hasMounted, isLoggedIn]);
     useEffect(() => {
-        if (hasMounted && cartItems.length > 0) {
-            const fetchImages = async () => {
-                const imagesData = {};
-                for (const item of cartItems) {
-                    try {
-                        const response = await fetch(`/api/get-images?brand=${encodeURIComponent(item.brand)}&gadgetName=${encodeURIComponent(item.name)}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            imagesData[`${item.brand}-${item.name}`] = data;
-                        } else {
+        if (hasMounted) {
+            const items = buyNowItem ? [buyNowItem] : cartItems;
+            if (items.length > 0) {
+                const fetchImages = async () => {
+                    const imagesData = {};
+                    for (const item of items) {
+                        try {
+                            const response = await fetch(`/api/get-images?brand=${encodeURIComponent(item.brand)}&gadgetName=${encodeURIComponent(item.name)}`);
+                            if (response.ok) {
+                                const data = await response.json();
+                                imagesData[`${item.brand}-${item.name}`] = data;
+                            } else {
+                                imagesData[`${item.brand}-${item.name}`] = {
+                                    coverImage: '/placeholder-image.jpg',
+                                    allImages: ['/placeholder-image.jpg']
+                                };
+                            }
+                        } catch (error) {
+                            console.error(`Error fetching images for ${item.brand} ${item.name}:`, error);
                             imagesData[`${item.brand}-${item.name}`] = {
                                 coverImage: '/placeholder-image.jpg',
                                 allImages: ['/placeholder-image.jpg']
                             };
                         }
-                    } catch (error) {
-                        console.error(`Error fetching images for ${item.brand} ${item.name}:`, error);
-                        imagesData[`${item.brand}-${item.name}`] = {
-                            coverImage: '/placeholder-image.jpg',
-                            allImages: ['/placeholder-image.jpg']
-                        };
                     }
-                }
-                setImages(imagesData);
-            };
+                    setImages(imagesData);
+                };
 
-            fetchImages();
+                fetchImages();
+            }
         }
-    }, [hasMounted, cartItems]);
+    }, [hasMounted, cartItems, buyNowItem]);
+    const hasOutOfStockItem = hasMounted && (buyNowItem ?
+        (buyNowItem.selectedColorStock === 0 || buyNowItem.selectedColorStock === '0') :
+        cartItems.some(item => (item.selectedColorStock !== undefined ? item.selectedColorStock : item.stock) === 0)
+    );
 
-    const hasOutOfStockItem = hasMounted && cartItems.some(item => {
-        return (item.selectedColorStock !== undefined ? item.selectedColorStock : item.stock) === 0;
-    });
+    const totalAmount = hasMounted ? (buyNowItem ?
+        (typeof buyNowItem.price === 'string' ? parseFloat(buyNowItem.price.replace(/[^0-9.]/g, '')) : buyNowItem.price) * buyNowItem.quantity :
+        cartItems.reduce((total, item) => {
+            const itemPrice = typeof item.price === 'string' ? parseFloat(item.price.replace(/[^0-9.]/g, '')) : item.price;
+            return total + (isNaN(itemPrice) ? 0 : itemPrice * item.quantity);
+        }, 0)
+    ) : 0;
 
-    const totalAmount = hasMounted ? cartItems.reduce((total, item) => {
-        const itemPrice = typeof item.price === 'string'
-            ? parseFloat(item.price.replace(/[^0-9.]/g, ''))
-            : item.price;
-        return total + (isNaN(itemPrice) ? 0 : itemPrice * item.quantity);
-    }, 0) : 0;
+    const formattedTotal = hasMounted ? (isNaN(totalAmount) ? 'Price unavailable' : `₱${totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`) : 'Price unavailable';
 
-    const formattedTotal = hasMounted ? (isNaN(totalAmount)
-        ? 'Price unavailable'
-        : `₱${totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`) : 'Price unavailable';
+    const itemsToCheckout = buyNowItem ? [buyNowItem] : cartItems;
+
+    const getCoverImage = (brand, name) => {
+        const key = `${brand}-${name}`;
+        return images[key] && images[key].coverImage ? images[key].coverImage : '/placeholder-image.jpg';
+    };
     const handleBuy = async () => {
         if (!hasMounted || isProcessing) return;
 
@@ -148,17 +168,14 @@ export default function Checkout() {
                 credentials: 'include',
                 body: JSON.stringify({
                     userId,
-                    cartItems,
+                    cartItems: itemsToCheckout,
                     totalAmount
                 }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                if (
-                    errorData.error &&
-                    errorData.error.includes('No address provided')
-                ) {
+                if (errorData.error && errorData.error.includes('No address provided')) {
                     toast.error(errorData.error, {
                         position: "top-center",
                         toastId: 'purchase-address-error'
@@ -174,11 +191,12 @@ export default function Checkout() {
                 return;
             }
 
-
             const data = await response.json();
             setOrderResult(data.receiptData);
             setShowReceipt(true);
-            clearCart();
+            if (!buyNowItem) {
+                clearCart();
+            }
             toast.success('Purchase completed successfully!', {
                 position: "top-center",
                 toastId: 'purchase-success'
@@ -200,208 +218,178 @@ export default function Checkout() {
             setIsProcessing(false);
         }
     };
-
-
-    const getCoverImage = (brand, name) => {
-        const key = `${brand}-${name}`;
-        return images[key] && images[key].coverImage ? images[key].coverImage : '/placeholder-image.jpg';
-    };
-    if (!hasMounted || !isLoggedIn) {
-        return (
-            <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
-                <Header gadgets={[]} onSearchSelect={() => { }} />
-                <main className="flex-grow max-w-7xl mx-auto px-4 py-8 text-center">
-                    <p className="text-gray-700 dark:text-gray-300 text-lg">Redirecting to login...</p>
-                </main>
-                <footer className="p-6 text-center text-sm text-gray-500 dark:text-gray-400 bg-gray-900 dark:bg-gray-800 mt-auto">
-                    © 2025 Phellcone TV. All rights reserved.
-                </footer>
-            </div>
-        );
-    }
     return (
-        <div className={`flex flex-col min-h-screen ${hasMounted ? (theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50') : 'bg-gray-50'}`}>
-            <Header gadgets={[]} onSearchSelect={() => { }} />
-            <main className="flex-grow max-w-7xl mx-auto px-4 py-8">
-                <div className={`flex items-center text-sm ${hasMounted ? (theme === 'dark' ? 'text-gray-400' : 'text-gray-500') : 'text-gray-500'} mb-4`}>
-                    <Link href="/" className={`hover:${hasMounted ? (theme === 'dark' ? 'text-green-400' : 'text-green-700') : 'text-green-700'}`}>Home</Link>
-                    <span className="mx-2">›</span>
-                    <Link href="/cart" className={`hover:${hasMounted ? (theme === 'dark' ? 'text-green-400' : 'text-green-700') : 'text-green-700'}`}>Cart</Link>
-                    <span className="mx-2">›</span>
-                    <span className={`${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'} font-medium`}>Checkout</span>
-                </div>
-                <h1 className={`${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'} text-2xl font-bold mb-6`}>Checkout</h1>
-                {showReceipt ? (
-                    <div className={`${hasMounted ? (theme === 'dark' ? 'bg-gray-800' : 'bg-white') : 'bg-white'} min-w-[340px] max-w-md rounded-2xl shadow-2xl border border-gray-200 p-8 flex flex-col items-center`}>
-                        <div className="flex justify-center items-center w-full">
-                            <img
-                                src="/logo.svg"
-                                alt="Phellcone TV Logo"
-                                className="mb-6"
-                                style={{
-                                    width: '200%',
-                                    height: '200%',
-                                    objectFit: 'contain'
-                                }}
-                            />
+        <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            {!hasMounted || !isLoggedIn ? (
+                <div style={{ visibility: 'hidden' }}></div>
+            ) : (
+                <>
+                    <Header gadgets={[]} onSearchSelect={() => { }} />
+                    <main className="flex-grow max-w-6xl mx-auto px-4 py-8">
+                        <div className={`flex items-center text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} mb-4`}>
+                            <Link href="/" className={`hover:${theme === 'dark' ? 'text-green-400' : 'text-green-700'}`}>Home</Link>
+                            <span className="mx-2">›</span>
+                            <Link href="/cart" className={`hover:${theme === 'dark' ? 'text-green-400' : 'text-green-700'}`}>Cart</Link>
+                            <span className="mx-2">›</span>
+                            <span className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} font-medium`}>Checkout</span>
                         </div>
-                        <div className="w-full">
-                            <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'} text-2xl font-extrabold mb-2`}>Hello, <span className={`${hasMounted ? (theme === 'dark' ? 'text-green-400' : 'text-green-600') : 'text-green-600'}`}>{orderResult.buyerName}</span></div>
-                            <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-300' : 'text-gray-700') : 'text-gray-700'} text-base mb-1`}>Thank you for purchasing {orderResult.items.length} {orderResult.items.length === 1 ? 'item' : 'items'}.</div>
-                            <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-300' : 'text-gray-700') : 'text-gray-700'} text-base mb-4`}>
-                                Your order <span className={`${hasMounted ? (theme === 'dark' ? 'text-white' : 'text-black') : 'text-black'} font-mono font-bold underline`}>#{orderResult.timestamp.replace(/\D/g, '').slice(-8)}</span> was paid.
-                            </div>
-                            <div className={`${hasMounted ? (theme === 'dark' ? 'border-gray-700' : 'border-gray-200') : 'border-gray-200'} border-t border-b py-4 mb-4`}>
-                                {orderResult.items.map((item, idx) => (
-                                    <div key={idx} className="flex items-center gap-4 py-2">
-                                        <img
-                                            src={getCoverImage(item.brand, item.name)}
-                                            alt={item.name}
-                                            className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                                            onError={e => { e.target.src = '/placeholder-image.jpg'; e.target.alt = 'Image not available'; }}
-                                        />
-                                        <div className="flex-1">
-                                            <div className={`${hasMounted ? (theme === 'dark' ? 'text-white' : 'text-gray-900') : 'text-gray-900'} font-semibold`}>{item.name}</div>
-                                            <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-400' : 'text-gray-500') : 'text-gray-500'} text-xs`}>{item.brand}</div>
-                                            <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-400' : 'text-gray-500') : 'text-gray-500'} text-xs`}>Qty: <span className={`${hasMounted ? (theme === 'dark' ? 'text-gray-200' : 'text-gray-700') : 'text-gray-700'} font-medium`}>{item.quantity}</span></div>
-                                        </div>
+                        <h1 className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} text-3xl font-bold mb-8`}>Checkout</h1>
+                        {showReceipt ? (
+                            <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-lg border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} p-8 max-w-2xl mx-auto`}>
+                                <div className="flex justify-center items-center w-full mb-6">
+                                    <img
+                                        src="/logo.svg"
+                                        alt="Phellcone TV Logo"
+                                        className="h-16"
+                                        style={{ objectFit: 'contain' }}
+                                    />
+                                </div>
+                                <div className="w-full">
+                                    <div className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} text-2xl font-bold mb-2`}>Hello, <span className={`${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>{orderResult.buyerName}</span></div>
+                                    <div className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} text-base mb-1`}>Thank you for purchasing {orderResult.items.length} {orderResult.items.length === 1 ? 'item' : 'items'}.</div>
+                                    <div className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} text-base mb-4`}>
+                                        Your order <span className={`${theme === 'dark' ? 'text-white' : 'text-black'} font-mono font-bold underline`}>#{orderResult.timestamp.replace(/\D/g, '').slice(-8)}</span> was paid.
                                     </div>
-                                ))}
-                            </div>
-                            <div className="w-full mb-2 space-y-1">
-                                <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-300' : 'text-gray-600') : 'text-gray-600'} flex justify-between text-base`}>
-                                    <span>Subtotal:</span>
-                                    <span className={`${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'}`}>₱{orderResult.subtotal}</span>
-                                </div>
-                                {orderResult.discountApplied && (
-                                    <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-300' : 'text-gray-600') : 'text-gray-600'} flex justify-between text-base`}>
-                                        <span>Discount ({orderResult.discountType}, 20%):</span>
-                                        <span className={`${hasMounted ? (theme === 'dark' ? 'text-green-400' : 'text-green-600') : 'text-green-600'}`}>−₱{orderResult.discountAmount}</span>
-                                    </div>
-                                )}
-                                <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-300' : 'text-gray-600') : 'text-gray-600'} flex justify-between text-base`}>
-                                    <span>Discounted Total:</span>
-                                    <span className={`${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'}`}>₱{orderResult.discountedTotal}</span>
-                                </div>
-                                <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-300' : 'text-gray-600') : 'text-gray-600'} flex justify-between text-base`}>
-                                    <span>Tax (VAT 12%):</span>
-                                    <span className={`${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'}`}>₱{orderResult.taxAmount}</span>
-                                </div>
-                                <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'} flex justify-between text-lg font-bold`}>
-                                    <span>Final Total:</span>
-                                    <span className={`${hasMounted ? (theme === 'dark' ? 'text-green-400' : 'text-green-600') : 'text-green-600'}`}>₱{orderResult.finalTotal}</span>
-                                </div>
-                            </div>
-                            <div className={`${hasMounted ? (theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50') : 'bg-gray-50'} w-full rounded-xl p-4 mt-4 mb-2`}>
-                                <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-400' : 'text-gray-500') : 'text-gray-500'} text-xs mb-1`}>Shipping Address</div>
-                                <div className={`${hasMounted ? (theme === 'dark' ? 'text-white' : 'text-gray-900') : 'text-gray-900'} font-semibold`}>{orderResult.address}</div>
-                            </div>
-                        </div>
-                    </div>
-                ) : hasMounted && cartItems.length === 0 ? (
-                    <div className={`${hasMounted ? (theme === 'dark' ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500') : 'bg-white text-gray-500'} rounded-2xl shadow-md p-6 text-center`}>
-                        <p>Your cart is empty. Add items to proceed with checkout.</p>
-                        <Link href="/" className={`mt-4 inline-block ${hasMounted ? (theme === 'dark' ? 'text-green-400 underline hover:text-green-300' : 'text-green-700 underline hover:text-green-900') : 'text-green-700 underline hover:text-green-900'}`}>
-                            Back to Home
-                        </Link>
-                    </div>
-                ) : hasMounted ? (
-                    <div className="flex flex-col gap-6 justify-center items-center">
-                        <div className={`${hasMounted ? (theme === 'dark' ? 'bg-gray-800' : 'bg-white') : 'bg-white'} min-w-[340px] max-w-md rounded-2xl shadow-md p-6`}>
-                            <div className="flex flex-col gap-4 mb-4">
-                                {hasMounted && (
-                                    <>
-                                        <div className="flex justify-center items-center w-full">
-                                            <img
-                                                src="/logo.svg"
-                                                alt="Phellcone TV Logo"
-                                                className="mb-2"
-                                                style={{
-                                                    width: '200%',
-                                                    height: '200%',
-                                                    objectFit: 'contain'
-                                                }}
-                                            />
-                                        </div>
-                                        <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-400' : 'text-gray-500') : 'text-gray-500'} text-center text-xs mb-2`}>
-                                            P. Tuazon Blvd, Cubao, Quezon City, Metro Manila
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                            <h2 className={`${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'} text-lg font-semibold mb-2`}>Order Summary</h2>
-                            {hasMounted && hasOutOfStockItem && (
-                                <div className={`${hasMounted ? (theme === 'dark' ? 'bg-red-900 text-red-300' : 'bg-red-100 text-red-700') : 'bg-red-100 text-red-700'} mb-4 p-3 rounded-lg`}>
-                                    Some items in your cart are out of stock. Please remove them before proceeding.
-                                </div>
-                            )}
-                            <ul className="space-y-4 mb-4">
-                                {hasMounted && cartItems.map((item, idx) => {
-                                    const itemStock = item.selectedColorStock !== undefined ? item.selectedColorStock : item.stock;
-                                    const isItemOutOfStock = itemStock === 0;
-                                    const itemPrice = typeof item.price === 'string'
-                                        ? parseFloat(item.price.replace(/[^0-9.]/g, ''))
-                                        : item.price;
-                                    const formattedPrice = isNaN(itemPrice) ? 'Price unavailable'
-                                        : `₱${itemPrice.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                                    const totalItemPrice = isNaN(itemPrice)
-                                        ? 'Price unavailable'
-                                        : `₱${(itemPrice * item.quantity).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                                    return (
-                                        <li key={`${item.id}-${item.selectedColor}-${idx}`} className="flex items-center gap-4 border-b border-gray-200 pb-2">
-                                            <img
-                                                src={getCoverImage(item.brand, item.name)}
-                                                alt={item.name}
-                                                className="w-14 h-14 object-cover rounded"
-                                                onError={(e) => { e.target.src = '/placeholder-image.jpg'; e.target.alt = 'Image not available'; }}
-                                            />
-                                            <div className="flex-1">
-                                                <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'} font-semibold`}>{item.name}</div>
-                                                <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-400' : 'text-gray-500') : 'text-gray-500'} text-xs`}>{item.brand}</div>
-                                                {item.selectedColor && (
-                                                    <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-400' : 'text-gray-500') : 'text-gray-500'} text-xs`}>Color: {item.selectedColor}</div>
-                                                )}
-                                                <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-400' : 'text-gray-500') : 'text-gray-500'} text-xs`}>Quantity: {item.quantity}</div>
-                                                <div className={`${hasMounted ? (theme === 'dark' ? 'text-green-400' : 'text-green-700') : 'text-green-700'} font-bold text-sm`}>{formattedPrice} (Total: {totalItemPrice})</div>
-                                                {isItemOutOfStock && (
-                                                    <div className={`${hasMounted ? (theme === 'dark' ? 'text-red-400' : 'text-red-600') : 'text-red-600'} text-xs font-semibold`}>Out of Stock</div>
-                                                )}
+                                    <div className={`${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} border-t border-b py-4 mb-4`}>
+                                        {orderResult.items.map((item, idx) => (
+                                            <div key={idx} className="flex items-center gap-4 py-2">
+                                                <img
+                                                    src={getCoverImage(item.brand, item.name)}
+                                                    alt={item.name}
+                                                    className={`w-16 h-16 object-cover rounded-lg border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}
+                                                    onError={e => { e.target.src = '/placeholder-image.jpg'; e.target.alt = 'Image not available'; }}
+                                                />
+                                                <div className="flex-1">
+                                                    <div className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'} font-semibold`}>{item.name}</div>
+                                                    <div className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-xs`}>{item.brand}</div>
+                                                    <div className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-xs`}>Qty: <span className={`${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'} font-medium`}>{item.quantity}</span></div>
+                                                    {item.color && <div className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-xs`}>Color: {item.color}</div>}
+                                                </div>
+                                                <div className={`${theme === 'dark' ? 'text-green-400' : 'text-green-700'} font-mono`}>₱{item.total}</div>
                                             </div>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                            <div className="border-t border-gray-200 pt-4">
-                                {hasMounted && (
-                                    <div className={`${hasMounted ? (theme === 'dark' ? 'text-gray-100' : 'text-gray-900') : 'text-gray-900'} flex justify-between text-base font-bold mb-4`}>
-                                        <span>Total Amount:</span>
-                                        <span className={`${hasMounted ? (theme === 'dark' ? 'text-green-400' : 'text-green-700') : 'text-green-700'}`}>{formattedTotal}</span>
+                                        ))}
                                     </div>
-                                )}
-                                {hasMounted && (
-                                    <button
-                                        onClick={handleBuy}
-                                        className={`w-full py-3 rounded-lg text-white text-lg font-semibold transition-all duration-200 ${hasOutOfStockItem || cartItems.length === 0 || isProcessing
-                                            ? 'bg-red-600 cursor-not-allowed'
-                                            : 'bg-green-600 hover:bg-green-700'
-                                            }`}
-                                        disabled={hasOutOfStockItem || cartItems.length === 0 || isProcessing}
-                                    >
-                                        {isProcessing ? 'Processing...' : 'Buy'}
-                                    </button>
-                                )}
+                                    <div className="w-full mb-2 space-y-1">
+                                        <div className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} flex justify-between text-base`}>
+                                            <span>Subtotal:</span>
+                                            <span className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>₱{orderResult.subtotal}</span>
+                                        </div>
+                                        {orderResult.discountApplied && (
+                                            <div className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} flex justify-between text-base`}>
+                                                <span>Discount ({orderResult.discountType}, 20%):</span>
+                                                <span className={`${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>−₱{orderResult.discountAmount}</span>
+                                            </div>
+                                        )}
+                                        <div className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} flex justify-between text-base`}>
+                                            <span>Discounted Total:</span>
+                                            <span className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>₱{orderResult.discountedTotal}</span>
+                                        </div>
+                                        <div className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} flex justify-between text-base`}>
+                                            <span>Tax (VAT 12%):</span>
+                                            <span className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>₱{orderResult.taxAmount}</span>
+                                        </div>
+                                        <div className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} flex justify-between text-lg font-bold`}>
+                                            <span>Final Total:</span>
+                                            <span className={`${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>₱{orderResult.finalTotal}</span>
+                                        </div>
+                                    </div>
+                                    <div className={`${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} w-full rounded-xl p-4 mt-4 mb-2`}>
+                                        <div className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-xs mb-1`}>Shipping Address</div>
+                                        <div className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'} font-semibold`}>{orderResult.address}</div>
+                                    </div>
+                                    <div className="flex justify-center mt-6">
+                                        <Link href="/" className={`py-2 px-4 rounded-lg ${theme === 'dark' ? 'bg-green-700 hover:bg-green-800 text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}>
+                                            Back to Home
+                                        </Link>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="text-center text-gray-500 p-6">
-                        <p>Loading...</p>
-                    </div>
-                )}
-            </main>
-            <footer className={`${hasMounted ? (theme === 'dark' ? 'bg-gray-800 text-gray-500' : 'bg-gray-900 text-gray-400') : 'bg-gray-900 text-gray-400'} p-6 text-center text-sm mt-auto`}>
-                © 2025 Phellcone TV. All rights reserved.
-            </footer>
+                        ) : itemsToCheckout.length === 0 ? (
+                            <div className={`${theme === 'dark' ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'} rounded-2xl shadow-md p-6 text-center max-w-2xl mx-auto`}>
+                                <p>Your cart is empty. Add items to proceed with checkout.</p>
+                                <Link href="/" className={`mt-4 inline-block ${theme === 'dark' ? 'text-green-400 underline hover:text-green-300' : 'text-green-700 underline hover:text-green-900'}`}>
+                                    Back to Home
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="md:col-span-2">
+                                    <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-6 mb-6`}>
+                                        <h2 className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} text-xl font-semibold mb-4`}>Shipping Information</h2>
+                                        {loadingUser ? (
+                                            <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Loading user information...</p>
+                                        ) : (
+                                            <div>
+                                                <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Name: <span className="font-semibold">{buyerName}</span></p>
+                                                <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Address: <span className="font-semibold">{address}</span></p>
+                                                {userError && <p className={`${theme === 'dark' ? 'text-red-400' : 'text-red-600'} text-sm mt-2`}>{userError}</p>}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="md:col-span-1">
+                                    <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-6 sticky top-4`}>
+                                        <h2 className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} text-xl font-semibold mb-4`}>Order Summary {buyNowItem ? '(Buy Now)' : ''}</h2>
+                                        {hasOutOfStockItem && (
+                                            <div className={`${theme === 'dark' ? 'bg-red-900 text-red-300' : 'bg-red-100 text-red-700'} mb-4 p-3 rounded-lg`}>
+                                                Some items in your order are out of stock. Please remove them before proceeding.
+                                            </div>
+                                        )}
+                                        <ul className="space-y-4 mb-4 max-h-60 overflow-y-auto">
+                                            {itemsToCheckout.map((item, idx) => {
+                                                const itemPrice = typeof item.price === 'string' ? parseFloat(item.price.replace(/[^0-9.]/g, '')) : item.price;
+                                                const itemTotal = isNaN(itemPrice) ? 'Price unavailable' : `₱${(itemPrice * item.quantity).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                                return (
+                                                    <li key={idx} className={`flex items-center gap-4 border-b pb-2 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+                                                        <img
+                                                            src={getCoverImage(item.brand, item.name)}
+                                                            alt={item.name}
+                                                            className={`w-16 h-16 object-cover rounded-lg border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}
+                                                            onError={e => { e.target.src = '/placeholder-image.jpg'; e.target.alt = 'Image not available'; }}
+                                                        />
+                                                        <div className="flex-1">
+                                                            <div className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} font-semibold`}>{item.name}</div>
+                                                            <div className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-sm`}>{item.brand}</div>
+                                                            <div className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Qty: {item.quantity}</div>
+                                                            {item.selectedColor && <div className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Color: {item.selectedColor}</div>}
+                                                        </div>
+                                                        <div className={`${theme === 'dark' ? 'text-green-400' : 'text-green-700'} font-mono`}>{itemTotal}</div>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                        <div className={`${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} border-t pt-4`}>
+                                            <div className="flex justify-between mb-2">
+                                                <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Subtotal:</span>
+                                                <span className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{formattedTotal}</span>
+                                            </div>
+                                            <div className="flex justify-between mb-2">
+                                                <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Shipping:</span>
+                                                <span className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>Free</span>
+                                            </div>
+                                            <div className="flex justify-between font-bold text-lg">
+                                                <span className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>Total:</span>
+                                                <span className={`${theme === 'dark' ? 'text-green-400' : 'text-green-700'}`}>{formattedTotal}</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleBuy}
+                                            disabled={hasOutOfStockItem || isProcessing}
+                                            className={`w-full py-3 mt-6 rounded-lg font-semibold transition ${hasOutOfStockItem || isProcessing ? 'bg-gray-400 text-gray-600 cursor-not-allowed' : theme === 'dark' ? 'bg-green-700 hover:bg-green-800 text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                                        >
+                                            {isProcessing ? 'Processing...' : 'Place Order'}
+                                        </button>
+                                        <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-xs text-center mt-2`}>By placing your order, you agree to our Terms of Service and Privacy Policy.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                    <footer className="bg-gray-900 text-gray-400 p-6 text-center text-sm mt-auto">
+                        © 2025 Phellcone TV. All rights reserved.
+                    </footer>
+                </>
+            )}
         </div>
     );
 }

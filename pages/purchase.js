@@ -117,20 +117,24 @@ export default function Purchase() {
         }
     };
 
+    if (!hasMounted) {
+        return <div style={{ visibility: 'hidden' }}></div>;
+    }
+
     return (
         <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
             <Header gadgets={[]} onSearchSelect={() => { }} />
             <main className="flex-grow max-w-6xl mx-auto px-4 py-8">
-                <div className="flex items-center text-sm text-gray-500 mb-4">
-                    <Link href="/" className="hover:text-green-700">Home</Link>
+                <div className="flex items-center text-sm mb-4">
+                    <Link href="/" className={`hover:${theme === 'dark' ? 'text-green-400' : 'text-green-700'} ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Home</Link>
                     <span className="mx-2">›</span>
-                    <span className="text-gray-900 font-medium">My Purchases</span>
+                    <span className={`${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'} font-medium`}>My Purchases</span>
                 </div>
-                <h1 className="text-2xl font-bold mb-8">My Purchases</h1>
+                <h1 className={`text-3xl font-bold mb-8 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>My Purchases</h1>
                 {groupKeys.length === 0 ? (
-                    <div className="bg-white rounded-2xl shadow-md p-6 text-center text-gray-500">
+                    <div className={`${theme === 'dark' ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'} rounded-2xl shadow-md p-8 text-center`}>
                         <p>No purchases found.</p>
-                        <Link href="/" className="mt-4 inline-block text-green-700 underline hover:text-green-900">
+                        <Link href="/" className={`mt-4 inline-block underline ${theme === 'dark' ? 'text-green-400 hover:text-green-300' : 'text-green-700 hover:text-green-900'}`}>
                             Back to Home
                         </Link>
                     </div>
@@ -138,8 +142,8 @@ export default function Purchase() {
                     <div className="flex flex-col gap-12">
                         {paginatedKeys.map(monthKey => (
                             <section key={monthKey}>
-                                <h2 className="text-lg font-semibold mb-4 text-green-700">{monthKey}</h2>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-green-400' : 'text-green-700'}`}>{monthKey}</h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                                     {grouped[monthKey].map(tx => {
                                         let receipt = {};
                                         try {
@@ -153,9 +157,14 @@ export default function Purchase() {
                                             try { orders = JSON.parse(orders); } catch { orders = []; }
                                         }
                                         return (
-                                            <div key={tx.id} className="bg-white border border-gray-200 rounded-xl shadow p-5 flex flex-col justify-between">
+                                            <div
+                                                key={tx.id}
+                                                className={`${theme === 'dark'
+                                                    ? 'bg-gray-800 border-gray-700'
+                                                    : 'bg-white border-gray-200'} border rounded-2xl shadow-lg p-6 flex flex-col justify-between transition hover:shadow-2xl`}
+                                            >
                                                 <div>
-                                                    <div className="font-semibold text-lg text-gray-900 mb-1">
+                                                    <div className={`font-semibold text-lg mb-1 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
                                                         {items.length > 0
                                                             ? items.map(i => i.name).join(', ')
                                                             : 'Purchased Item(s)'}
@@ -167,10 +176,10 @@ export default function Purchase() {
                                                         Status: <span className="font-semibold">{tx.status}</span>
                                                     </div>
                                                 </div>
-                                                <div className="flex flex-col gap-2">
-                                                    <div className="text-green-700 font-bold text-xl">₱{receipt.finalTotal || tx.total_amount}</div>
+                                                <div className="flex flex-col gap-2 mt-4">
+                                                    <div className={`font-bold text-xl ${theme === 'dark' ? 'text-green-400' : 'text-green-700'}`}>₱{receipt.finalTotal || tx.total_amount}</div>
                                                     <button
-                                                        className="text-green-700 underline font-semibold text-sm"
+                                                        className={`underline font-semibold text-sm ${theme === 'dark' ? 'text-green-400 hover:text-green-300' : 'text-green-700 hover:text-green-900'}`}
                                                         onClick={() => handleViewReceipt(receipt, orders)}
                                                     >
                                                         View Receipt
@@ -184,13 +193,21 @@ export default function Purchase() {
                         ))}
                         <div className="flex justify-center mt-8 gap-2">
                             <button
-                                className={`px-4 py-2 rounded ${page === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-green-700 text-white hover:bg-green-800'}`}
+                                className={`px-4 py-2 rounded ${page === 1
+                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                    : theme === 'dark'
+                                        ? 'bg-green-700 text-white hover:bg-green-800'
+                                        : 'bg-green-700 text-white hover:bg-green-800'}`}
                                 disabled={page === 1}
                                 onClick={() => setPage(page - 1)}
                             >Previous</button>
-                            <span className="px-4 py-2 text-gray-700">{page} / {totalPages}</span>
+                            <span className={`px-4 py-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{page} / {totalPages}</span>
                             <button
-                                className={`px-4 py-2 rounded ${page === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-green-700 text-white hover:bg-green-800'}`}
+                                className={`px-4 py-2 rounded ${page === totalPages
+                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                    : theme === 'dark'
+                                        ? 'bg-green-700 text-white hover:bg-green-800'
+                                        : 'bg-green-700 text-white hover:bg-green-800'}`}
                                 disabled={page === totalPages}
                                 onClick={() => setPage(page + 1)}
                             >Next</button>
@@ -198,10 +215,10 @@ export default function Purchase() {
                     </div>
                 )}
                 {selectedReceipt && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white rounded-2xl p-8 max-w-lg w-full relative">
+                    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+                        <div className={`${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'} rounded-2xl p-8 max-w-lg w-full relative shadow-2xl`}>
                             <button
-                                className="absolute top-2 right-4 text-xl text-gray-400 hover:text-gray-700"
+                                className="absolute top-2 right-4 text-2xl text-gray-400 hover:text-gray-700"
                                 onClick={() => { setSelectedReceipt(null); setSelectedOrderDetails([]); }}
                             >×</button>
                             <div className="mb-4">

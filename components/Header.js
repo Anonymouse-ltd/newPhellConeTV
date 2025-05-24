@@ -20,7 +20,8 @@ export default function Header({ gadgets = [], onSearchSelect }) {
 
     const { cartItems } = useCart();
     const router = useRouter();
-    const { theme, toggleTheme } = useTheme();
+    const themeData = useTheme();
+    const { theme, toggleTheme } = hasMounted ? themeData : { theme: 'light', toggleTheme: () => { } };
 
     useEffect(() => {
         setHasMounted(true);
